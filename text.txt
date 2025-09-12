@@ -1,0 +1,148 @@
+// src/App.js
+import React, { useEffect, useState } from "react";
+
+const API_URL = "http://localhost:3000/api/qas";
+
+export default function App() {
+  const [qas, setQAs] = useState([]);
+  const [question, setQuestion] = useState("");
+  const [answerText, setAnswerText] = useState("");
+  const [answerAudio, setAnswerAudio] = useState(null);
+
+  // Load all QAs
+  useEffect(() => {
+    fetch(API_URL)
+      .then((res) => res.json())
+      .then((data) => setQAs(data))
+      .catch((err) => console.error("Error loading QAs:", err));
+  }, []);
+
+  // Add QA
+  const handleAddQA = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("question", question);
+    formData.append("answerText", answerText);
+    if (answerAudio) {
+      formData.append("answerAudio", answerAudio);
+    }
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: formData,
+    });
+    const newQA = await res.json();
+    setQAs([...qas, newQA]);
+    setQuestion("");
+    setAnswerText("");
+    setAnswerAudio(null);
+  };
+
+  // Delete QA
+  const handleDelete = async (id) => {
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    setQAs(qas.filter((qa) => qa._id !== id));
+  };
+
+  return (
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        padding: "20px",
+        maxWidth: "700px",
+        margin: "auto",
+      }}
+    >
+      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
+        Herbal Medicine Q&A Manager
+      </h1>
+
+      {/* Form */}
+      <form
+        onSubmit={handleAddQA}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          marginBottom: "30px",
+          padding: "15px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Question"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          style={{ padding: "10px", fontSize: "14px" }}
+          required
+        />
+        <textarea
+          placeholder="Answer Text"
+          value={answerText}
+          onChange={(e) => setAnswerText(e.target.value)}
+          style={{ padding: "10px", fontSize: "14px" }}
+          rows="3"
+        />
+        <input
+          type="file"
+          accept="audio/*"
+          onChange={(e) => setAnswerAudio(e.target.files[0])}
+        />
+        <button
+          type="submit"
+          style={{
+            padding: "10px",
+            background: "green",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Add QA
+        </button>
+      </form>
+
+      {/* List */}
+      <h2>Saved QAs</h2>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {qas.map((qa) => (
+          <li
+            key={qa._id}
+            style={{
+              marginBottom: "15px",
+              padding: "10px",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+          >
+            <strong>Q:</strong> {qa.question}
+            <br />
+            <strong>A:</strong> {qa.answerText}
+            {qa.answerAudio && (
+              <div>
+                <audio controls src={`http://localhost:3000${qa.answerAudio}`} />
+              </div>
+            )}
+            <button
+              onClick={() => handleDelete(qa._id)}
+              style={{
+                marginTop: "10px",
+                padding: "5px 10px",
+                background: "red",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
