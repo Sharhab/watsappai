@@ -1,52 +1,61 @@
 // src/App.js
 import React, { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/qas";
+// NOTE: Keep your local dev API if that's how your backend is proxied.
+// If your backend lives on Render, you can switch API_URL to use BACKEND_BASE instead.
+const BACKEND_BASE = "https://watsappai2.onrender.com";
+const API_URL = `${BACKEND_BASE}/api/qas`;
+const INTRO_URL = `${BACKEND_BASE}/api/intro`;
+
+const resolveUrl = (u) => {
+  if (!u) return null;
+  if (u.startsWith("http")) return u;
+  return `${BACKEND_BASE}${u.startsWith("/") ? u : `/${u}`}`;
+};
 
 export default function App() {
   const [qas, setQAs] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Create form state
+  // Create QA form state
   const [question, setQuestion] = useState("");
   const [answerText, setAnswerText] = useState("");
-  const [answerAudio, setAnswerAudio] = useState(null); // File
+  const [answerAudio, setAnswerAudio] = useState(null);
 
- // Example initial state (empty placeholders)
-const [sequence, setSequence] = useState([
-  { type: "video", file: null },  // step 0
-  { type: "video", file: null },  // step 1
-  { type: "audio", file: null },  // step 2
-  { type: "audio", file: null },  // step 3
-  { type: "text", content: "" },  // step 4
-  { type: "audio", file: null },  // step 5
-]);
+  // Intro sequence form state
+  const [sequence, setSequence] = useState([
+    { type: "video", file: null }, // step 0
+    { type: "video", file: null }, // step 1
+    { type: "audio", file: null }, // step 2
+    { type: "audio", file: null }, // step 3
+    { type: "text", content: "" }, // step 4
+    { type: "audio", file: null }, // step 5
+  ]);
 
-  // Edit form state
+  // Edit QA state
   const [editId, setEditId] = useState(null);
   const [editQuestion, setEditQuestion] = useState("");
   const [editAnswerText, setEditAnswerText] = useState("");
-  const [editAnswerAudio, setEditAnswerAudio] = useState(null); // File
+  const [editAnswerAudio, setEditAnswerAudio] = useState(null);
   const [editExistingAudioUrl, setEditExistingAudioUrl] = useState(null);
 
+  // Intro data
   const [intro, setIntro] = useState([]);
 
-useEffect(() => {
-  fetch("http://localhost:3000/api/intro")
-    .then((res) => res.json())
-    .then((data) => {
-      if (data && data.sequence) {
-        setIntro(data.sequence); // 🔥 use the sequence array directly
-      } else {
-        console.error("Unexpected intro format:", data);
-        setIntro([]); // fallback to empty
-      }
-    })
-    .catch((err) => {
-      console.error("Error loading intro:", err);
-    });
-}, []);
-
+  // Load Intro from backend (uses Render base)
+  useEffect(() => {
+    fetch(INTRO_URL)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.sequence) {
+          setIntro(data.sequence);
+        } else {
+          console.error("Unexpected intro format:", data);
+          setIntro([]);
+        }
+      })
+      .catch((err) => console.error("Error loading intro:", err));
+  }, []);
 
   // Load all QAs
   useEffect(() => {
@@ -59,35 +68,35 @@ useEffect(() => {
   }, []);
 
   // Add QA
+
   const handleAddQA = async (e) => {
-    e.preventDefault();
-
-    try {
-      const formData = new FormData();
-      formData.append("question", question);
-      formData.append("answerText", answerText);
-      if (answerAudio) {
-        formData.append("answerAudio", answerAudio);
-      }
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Failed to create QA");
-
-      const newQA = await res.json();
-      setQAs((prev) => [...prev, newQA]);
-
-      // reset form
-      setQuestion("");
-      setAnswerText("");
-      setAnswerAudio(null);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add QA");
+  e.preventDefault();
+  try {
+    const formData = new FormData();
+    formData.append("question", question);
+    formData.append("answerText", answerText);
+    if (answerAudio) {
+      formData.append("answerAudio", answerAudio);
     }
-  };
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Failed to create QA");
+    const newQA = await res.json();
+    setQAs((prev) => [...prev, newQA]);
+
+    // reset
+    setQuestion("");
+    setAnswerText("");
+    setAnswerAudio(null);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add QA");
+  }
+};
 
   // Begin edit
   const startEdit = (qa) => {
@@ -108,103 +117,36 @@ useEffect(() => {
     setEditExistingAudioUrl(null);
   };
 
-// Save Intro Message
-// inside your App.jsx (or wherever you handle upload)
-const handleSaveIntro = async (e) => {
+  // Update QA
+const handleUpdateQA = async (e) => {
   e.preventDefault();
+  if (!editId) return;
+
   try {
     const formData = new FormData();
+    formData.append("question", editQuestion);
+    formData.append("answerText", editAnswerText);
 
-    // Loop through sequence correctly
-    sequence.forEach((step, i) => {
-      if (step.type === "text") {
-        formData.append(`step${i}_content`, step.content);
-      } else if (step.file) {
-        formData.append(`step${i}_file`, step.file);
-      }
-    });
+    // ✅ Only append new file if selected
+    if (editAnswerAudio) {
+      formData.append("answerAudio", editAnswerAudio);
+    }
 
-    // ✅ ALSO send metadata JSON (so backend doesn’t break)
-    formData.append(
-      "sequence",
-      JSON.stringify(
-        sequence.map((s) => ({
-          type: s.type,
-          content: s.content || null,
-        }))
-      )
-    );
-
-    const res = await fetch("http://localhost:3000/api/intro", {
-      method: "POST",
+    const res = await fetch(`${API_URL}/${editId}`, {
+      method: "PUT",
       body: formData,
     });
 
-    if (!res.ok) {
-      throw new Error(await res.text());
-    }
+    if (!res.ok) throw new Error("Failed to update QA");
+    const updated = await res.json();
 
-    const data = await res.json();
-    console.log("✅ Upload successful:", data);
+    setQAs((prev) => prev.map((q) => (q._id === editId ? updated : q)));
+    cancelEdit();
   } catch (err) {
-    console.error("❌ Upload failed:", err);
+    console.error(err);
+    alert("Failed to update QA");
   }
 };
-
-// When file is chosen (video/audio)
-const handleFileChange = (index, file) => {
-  setSequence((prev) => {
-    const updated = [...prev];
-    updated[index].file = file;
-    return updated;
-  });
-};
-
-// When text is typed
-const handleTextChange = (index, value) => {
-  setSequence((prev) => {
-    const updated = [...prev];
-    updated[index].content = value;
-    return updated;
-  });
-};
-
-//--Handledelete------
- const handleDeleteIntroStep = async (index) => {
-    await fetch(`${API_URL}/intro/${index}`, { method: "DELETE" });
-    setIntroSequence(introSequence.filter((_, i) => i !== index));
-  };
-
-  // Update QA
-  const handleUpdateQA = async (e) => {
-    e.preventDefault();
-    if (!editId) return;
-
-    try {
-      const formData = new FormData();
-      formData.append("question", editQuestion);
-      formData.append("answerText", editAnswerText);
-      // Only append a new audio file if user selected one
-      if (editAnswerAudio) {
-        formData.append("answerAudio", editAnswerAudio);
-      }
-
-      const res = await fetch(`${API_URL}/${editId}`, {
-        method: "PUT",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Failed to update QA");
-
-      const updated = await res.json();
-      setQAs((prev) => prev.map((q) => (q._id === editId ? updated : q)));
-
-      // reset edit state
-      cancelEdit();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update QA");
-    }
-  };
 
   // Delete QA
   const handleDelete = async (id) => {
@@ -217,6 +159,57 @@ const handleTextChange = (index, value) => {
       console.error(err);
       alert("Failed to delete QA");
     }
+  };
+
+  // Save Intro
+  const handleSaveIntro = async (e) => {
+    e.preventDefault();
+    try {
+      const formData = new FormData();
+      sequence.forEach((step, i) => {
+        if (step.type === "text") {
+          formData.append(`step${i}_content`, step.content);
+        } else if (step.file) {
+          formData.append(`step${i}_file`, step.file);
+        }
+      });
+      formData.append(
+        "sequence",
+        JSON.stringify(
+          sequence.map((s) => ({ type: s.type, content: s.content || null }))
+        )
+      );
+
+      const res = await fetch(`${BACKEND_BASE}/api/intro`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      console.log("✅ Upload successful:", data);
+      // Refresh intro preview after save
+      if (data && data.intro && data.intro.sequence) {
+        setIntro(data.intro.sequence);
+      }
+    } catch (err) {
+      console.error("❌ Upload failed:", err);
+    }
+  };
+
+  // Sequence handlers
+  const handleFileChange = (index, file) => {
+    setSequence((prev) => {
+      const updated = [...prev];
+      updated[index].file = file;
+      return updated;
+    });
+  };
+  const handleTextChange = (index, value) => {
+    setSequence((prev) => {
+      const updated = [...prev];
+      updated[index].content = value;
+      return updated;
+    });
   };
 
   return (
@@ -232,7 +225,7 @@ const handleTextChange = (index, value) => {
         Herbal Medicine Q&A Manager
       </h1>
 
-      {/* CREATE FORM */}
+      {/* CREATE QA FORM */}
       <form
         onSubmit={handleAddQA}
         style={{
@@ -281,7 +274,7 @@ const handleTextChange = (index, value) => {
         </button>
       </form>
 
-      {/* EDIT FORM */}
+      {/* EDIT QA FORM */}
       {editId && (
         <form
           onSubmit={handleUpdateQA}
@@ -318,7 +311,7 @@ const handleTextChange = (index, value) => {
               {editExistingAudioUrl ? (
                 <audio
                   controls
-                  src={`http://localhost:3000${editExistingAudioUrl}`}
+                  src={resolveUrl(editExistingAudioUrl)}
                   style={{ display: "block", marginTop: "6px" }}
                 />
               ) : (
@@ -330,7 +323,9 @@ const handleTextChange = (index, value) => {
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => setEditAnswerAudio(e.target.files[0] || null)}
+                onChange={(e) =>
+                  setEditAnswerAudio(e.target.files[0] || null)
+                }
                 style={{ display: "block", marginTop: "6px" }}
               />
             </label>
@@ -368,7 +363,7 @@ const handleTextChange = (index, value) => {
         </form>
       )}
 
-      {/* LIST */}
+      {/* QA LIST HEADER */}
       <div
         style={{
           display: "flex",
@@ -383,6 +378,7 @@ const handleTextChange = (index, value) => {
         )}
       </div>
 
+      {/* QA LIST */}
       <ul style={{ listStyle: "none", padding: 0 }}>
         {qas.map((qa) => (
           <li
@@ -401,12 +397,13 @@ const handleTextChange = (index, value) => {
               <strong>A:</strong> {qa.answerText || <em>(no text)</em>}
             </div>
 
-            {qa.answerAudio && (
+            {qa.answerAudio ? (
               <div style={{ marginTop: 6 }}>
-                <audio
-                  controls
-                  src={`http://localhost:3000${qa.answerAudio}`}
-                />
+                <audio controls src={resolveUrl(qa.answerAudio)} />
+              </div>
+            ) : (
+              <div style={{ color: "red", fontSize: "14px", marginTop: 6 }}>
+                ⚠️ No audio uploaded
               </div>
             )}
 
@@ -441,160 +438,193 @@ const handleTextChange = (index, value) => {
           </li>
         ))}
       </ul>
-{/* Intro Form */}
-<form
-  onSubmit={handleSaveIntro}
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-    padding: "20px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    marginTop: "30px",
-    background: "#333"
-  }}
->
-  <h3 style={{ margin: 0 }}>Upload Intro Sequence</h3>
 
-  <label>
-    Video 1:
-    <input
-      type="file"
-      accept="video/*"
-      onChange={(e) => handleFileChange(0, e.target.files[0])}
-      required
-    />
-  </label>
-
-  <label>
-    Video 2:
-    <input
-      type="file"
-      accept="video/*"
-      onChange={(e) => handleFileChange(1, e.target.files[0])}
-      required
-    />
-  </label>
-
-  <label>
-    Audio 1:
-    <input
-      type="file"
-      accept="audio/*"
-      onChange={(e) => handleFileChange(2, e.target.files[0])}
-      required
-    />
-  </label>
-
-  <label>
-    Audio 2:
-    <input
-      type="file"
-      accept="audio/*"
-      onChange={(e) => handleFileChange(3, e.target.files[0])}
-      required
-    />
-  </label>
-
-  <label>
-    Payment Text:
-    <textarea
-      placeholder="Enter payment details"
-      value={sequence[4]?.content || ""}
-      onChange={(e) => handleTextChange(4, e.target.value)}
-      required
-      style={{ width: "100%", minHeight: "80px", padding: "8px" }}
-    />
-  </label>
-
-  <label>
-    Closing Audio:
-    <input
-      type="file"
-      accept="audio/*"
-      onChange={(e) => handleFileChange(5, e.target.files[0])}
-      required
-    />
-  </label>
-
-  <button
-    type="submit"
-    style={{
-      padding: "10px 15px",
-      background: "green",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-      fontWeight: "bold"
-    }}
-  >
-    Save Intro
-  </button>
-</form>
-
-{/* Intro Preview */}
-<div
-  style={{
-    marginTop: "30px",
-    padding: "20px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    background: "#333",
-    color: "white",
-  }}
->
-  <h3 style={{ margin: "0 0 15px 0" }}>📽 Intro Sequence</h3>
-{intro.length === 0 ? (
-  <p>No intro uploaded yet.</p>
-) : (
-  <ul style={{ listStyle: "none", padding: 0, marginTop: "20px" }}>
-    {intro.map((step, i) => (
-      <li
-        key={i}
+      {/* INTRO FORM */}
+      <form
+        onSubmit={handleSaveIntro}
         style={{
-          border: "1px solid #ccc",
+          display: "flex",
+          flexDirection: "column",
+          gap: "15px",
+          padding: "20px",
+          border: "1px solid #ddd",
           borderRadius: "8px",
-          padding: "10px",
-          background: "#444",
-          color: "white",
-          marginBottom: "12px"
+          marginTop: "30px",
+          background: "#333",
+          color: "#fff",
         }}
       >
-        <p style={{ fontWeight: "bold", marginBottom: "8px" }}>
-          Step {i + 1}: {step.type}
-        </p>
+        <h3 style={{ margin: 0 }}>Upload Intro Sequence</h3>
 
-        {step.type === "text" && (
-          <p style={{ margin: 0 }}>{step.content}</p>
-        )}
-
-        {step.type === "video" && step.fileUrl && (
-          <video
-            controls
-            src={`http://localhost:3000${step.fileUrl}`}
-            style={{ width: "250px", borderRadius: "8px" }}
+        <label>
+          Video 1:
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => handleFileChange(0, e.target.files[0])}
+            required
+            style={{ display: "block", marginTop: 6 }}
           />
-        )}
+        </label>
 
-        {step.type === "audio" && step.fileUrl && (
-          <audio
-            controls
-            src={`http://localhost:3000${step.fileUrl}`}
-            style={{ marginTop: "5px" }}
+        <label>
+          Video 2:
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => handleFileChange(1, e.target.files[0])}
+            required
+            style={{ display: "block", marginTop: 6 }}
           />
+        </label>
+
+        <label>
+          Audio 1:
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => handleFileChange(2, e.target.files[0])}
+            required
+            style={{ display: "block", marginTop: 6 }}
+          />
+        </label>
+
+        <label>
+          Audio 2:
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => handleFileChange(3, e.target.files[0])}
+            required
+            style={{ display: "block", marginTop: 6 }}
+          />
+        </label>
+
+        <label>
+          Payment Text:
+          <textarea
+            placeholder="Enter payment details"
+            value={sequence[4]?.content || ""}
+            onChange={(e) => handleTextChange(4, e.target.value)}
+            required
+            style={{
+              width: "100%",
+              minHeight: "80px",
+              padding: "8px",
+              display: "block",
+              marginTop: 6,
+            }}
+          />
+        </label>
+
+        <label>
+          Closing Audio:
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => handleFileChange(5, e.target.files[0])}
+            required
+            style={{ display: "block", marginTop: 6 }}
+          />
+        </label>
+
+        <button
+          type="submit"
+          style={{
+            padding: "10px 15px",
+            background: "green",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Save Intro
+        </button>
+      </form>
+
+      {/* INTRO PREVIEW */}
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          background: "#333",
+          color: "white",
+        }}
+      >
+        <h3 style={{ margin: "0 0 15px 0" }}>📽 Intro Sequence</h3>
+        {intro.length === 0 ? (
+          <p>No intro uploaded yet.</p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, marginTop: "20px" }}>
+            {intro.map((step, i) => {
+              const url = resolveUrl(step.fileUrl);
+              return (
+                <li
+                  key={i}
+                  style={{
+                    border: "1px solid #ccc",
+                    borderRadius: "8px",
+                    padding: "10px",
+                    background: "#444",
+                    color: "white",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <p style={{ fontWeight: "bold", marginBottom: "8px" }}>
+                    Step {i + 1}: {step.type}
+                  </p>
+
+                  {step.type === "text" && (
+                    <p style={{ margin: 0 }}>{step.content}</p>
+                  )}
+
+                  {step.type === "video" &&
+                    (url ? (
+                      <video
+                        controls
+                        src={url}
+                        style={{ width: "250px", borderRadius: "8px" }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          color: "red",
+                          fontSize: "14px",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        ⚠️ Video not available
+                      </div>
+                    ))}
+
+                  {step.type === "audio" &&
+                    (url ? (
+                      <audio
+                        controls
+                        src={url}
+                        style={{ marginTop: "5px", width: "100%" }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          color: "red",
+                          fontSize: "14px",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        ⚠️ Audio not available
+                      </div>
+                    ))}
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </li>
-    ))}
-  </ul>
-)}
-
-  
-</div>
-
-
-
+      </div>
     </div>
   );
 }
