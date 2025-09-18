@@ -1,152 +1,179 @@
-import { useState, useEffect } from "react";
+// src/Dashboard.jsx
+import React, { useState, useEffect, useRef } from "react";
 
-function Dashboard() {
-  const [tab, setTab] = useState("conversations");
+const BACKEND_BASE = "https://watsappai2.onrender.com";
+
+export default function Dashboard() {
   const [conversations, setConversations] = useState([]);
-  const [analytics, setAnalytics] = useState({});
-  const [failed, setFailed] = useState([]);
+  const [selectedPhone, setSelectedPhone] = useState(null);
+  const [chat, setChat] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [highlightedMsg, setHighlightedMsg] = useState(null);
 
-  // Load conversations
+  const lastMessageCountRef = useRef(0);
+
+  // 📌 Load all conversations
+  const fetchConversations = () => {
+    fetch(`${BACKEND_BASE}/api/conversations`)
+      .then((res) => res.json())
+      .then((data) => setConversations(data || []))
+      .catch((err) => console.error("Error loading conversations:", err));
+  };
+
   useEffect(() => {
-    if (tab === "conversations") {
-      fetch(`${import.meta.env.VITE_BACKEND}/api/conversations`)
-        .then(res => res.json())
-        .then(data => setConversations(data.conversations || []));
-    }
-    if (tab === "analytics") {
-      fetch(`${import.meta.env.VITE_BACKEND}/api/conversations`)
-        .then(res => res.json())
-        .then(data => {
-          const counts = {};
-          data.conversations.forEach(conv =>
-            conv.messages.forEach(msg => {
-              if (msg.matchedQA) {
-                counts[msg.matchedQA] = (counts[msg.matchedQA] || 0) + 1;
-              }
-            })
-          );
-          setAnalytics(counts);
-        });
-    }
-    if (tab === "failed") {
-      fetch(`${import.meta.env.VITE_BACKEND}/api/failed-matches`)
-        .then(res => res.json())
-        .then(data => setFailed(data.failed || []));
-    }
-  }, [tab]);
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 10000); // every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  // 📌 Load chat for selected customer
+  const fetchChat = () => {
+    if (!selectedPhone) return;
+    setLoading(true);
+    fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const history = data.history || [];
+        // Highlight new message
+        if (history.length > lastMessageCountRef.current) {
+          const newMsgIndex = history.length - 1;
+          setHighlightedMsg(newMsgIndex);
+          setTimeout(() => setHighlightedMsg(null), 2000);
+        }
+        lastMessageCountRef.current = history.length;
+        setChat(history);
+      })
+      .catch((err) => console.error("Error loading chat:", err))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!selectedPhone) return;
+    lastMessageCountRef.current = 0;
+    fetchChat();
+    const interval = setInterval(fetchChat, 5000); // every 5s
+    return () => clearInterval(interval);
+  }, [selectedPhone]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>🤖 AI Dashboard</h2>
-
-      {/* Tabs */}
-      <div style={{ marginBottom: "20px" }}>
-        {["conversations", "analytics", "failed"].map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
+    <div style={{ display: "flex", height: "100vh", fontFamily: "Arial" }}>
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "280px",
+          borderRight: "1px solid #333",
+          padding: "10px",
+          overflowY: "auto",
+          background: "#1e1e1e",
+          color: "#fff",
+        }}
+      >
+        <h3 style={{ marginBottom: "10px" }}>📱 Customers</h3>
+        {conversations.map((conv) => (
+          <div
+            key={conv.phone}
+            onClick={() => setSelectedPhone(conv.phone)}
             style={{
-              marginRight: "10px",
-              padding: "10px 15px",
+              padding: "10px",
+              marginBottom: "6px",
               borderRadius: "6px",
-              border: "1px solid #ccc",
-              background: tab === t ? "#007bff" : "#f1f1f1",
-              color: tab === t ? "#fff" : "#000",
-              cursor: "pointer"
+              cursor: "pointer",
+              background:
+                selectedPhone === conv.phone ? "#2e7d32" : "#2c2c2c",
+              color: "#fff",
             }}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
+            <b>{conv.phone}</b>
+            <p style={{ margin: 0, fontSize: "13px", color: "#ccc" }}>
+              {conv.lastMessage || "No messages yet"}
+            </p>
+          </div>
         ))}
       </div>
 
-      {/* Conversations Tab */}
-      {tab === "conversations" && (
-        <div>
-          {conversations.map(conv => (
-            <div
-              key={conv._id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                marginBottom: "20px",
-                padding: "15px",
-                background: "#fff",
-                color: "#000"
-              }}
-            >
-              <h4>📞 {conv.phone}</h4>
-              <div>
-                {conv.messages.map((msg, i) => (
+      {/* Chat Window */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: "#121212", // dark background
+          color: "#fff",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            padding: "20px",
+            overflowY: "auto",
+          }}
+        >
+          {!selectedPhone && <p>Select a customer to view chat</p>}
+          {selectedPhone && (
+            <>
+              <h3 style={{ borderBottom: "1px solid #444", paddingBottom: "10px" }}>
+                💬 Conversation with {selectedPhone}
+              </h3>
+              {loading ? (
+                <p>Loading chat...</p>
+              ) : (
+                chat.map((msg, i) => (
                   <div
                     key={i}
                     style={{
                       margin: "8px 0",
-                      textAlign: msg.sender === "ai" ? "right" : "left"
+                      textAlign: msg.from === "ai" ? "right" : "left",
                     }}
                   >
-                    <span
+                    <div
                       style={{
                         display: "inline-block",
-                        padding: "8px 12px",
+                        padding: "10px",
                         borderRadius: "8px",
-                        background: msg.sender === "ai" ? "#e0f7fa" : "#f1f1f1",
-                        color: "#000"
+                        maxWidth: "70%",
+                        background:
+                          highlightedMsg === i
+                            ? "#fff176" // yellow highlight
+                            : msg.from === "ai"
+                            ? "#2e7d32" // green for AI
+                            : "#333", // dark grey for customer
+                        color: "#fff",
+                        border:
+                          msg.from === "ai"
+                            ? "1px solid #66bb6a"
+                            : "1px solid #555",
+                        transition: "background 0.3s ease",
                       }}
                     >
-                      {msg.content}
-                      {msg.matchedQA && (
-                        <small
+                      <p style={{ margin: 0 }}>{msg.text}</p>
+                      {msg.audioUrl && (
+                        <audio
+                          controls
+                          src={msg.audioUrl}
                           style={{
-                            display: "block",
-                            fontSize: "10px",
-                            color: "gray"
+                            marginTop: "5px",
+                            width: "100%",
+                            background: "#222",
                           }}
-                        >
-                          🔎 Matched: {msg.matchedQA} (
-                          {Math.round((msg.confidence || 0) * 100)}%)
-                        </small>
+                        />
                       )}
-                    </span>
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          marginTop: "4px",
+                          color: "#bbb",
+                        }}
+                      >
+                        {new Date(msg.timestamp).toLocaleString()}
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                ))
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {/* Analytics Tab */}
-      {tab === "analytics" && (
-        <div>
-          <h3>📊 Top Matched QAs</h3>
-          {Object.keys(analytics).length === 0 && <p>No data yet.</p>}
-          <ul>
-            {Object.entries(analytics).map(([qa, count]) => (
-              <li key={qa}>
-                {qa} — <b>{count} times</b>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Failed Matches Tab */}
-      {tab === "failed" && (
-        <div>
-          <h3>❌ Failed Matches</h3>
-          {failed.length === 0 && <p>No failed matches yet.</p>}
-          <ul>
-            {failed.map((f, i) => (
-              <li key={i}>
-                "{f._id}" — <b>{f.count} times</b>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
-
-export default Dashboard;
