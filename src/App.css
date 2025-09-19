@@ -1,7 +1,7 @@
 /* ===== Layout ===== */
 .app-container {
   display: flex;
-  min-height: 70vh;
+  min-height: 100vh;
   font-family: Arial, sans-serif;
 }
 
@@ -90,7 +90,7 @@ input[type="file"] {
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 14px;
-  background: #fff;
+  background: #999;
   color: #000;
   box-sizing: border-box;
 }
@@ -102,7 +102,7 @@ textarea {
 
 input[type="file"] {
   padding: 6px;
-  background: #fdfdfd;
+  background: #999;
   cursor: pointer;
 }
 
@@ -150,7 +150,7 @@ input[type="file"] {
 .qa-card {
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 8px;
+  padding: 12px;
   margin-bottom: 15px;
   background: #333;
 }
