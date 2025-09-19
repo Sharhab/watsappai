@@ -1,42 +1,300 @@
-/* #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* ===== Layout ===== */
+.app-container {
+  display: flex;
+  min-height: 70vh;
+  font-family: Arial, sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.sidebar {
+  width: 240px;
+  background: #222;
+  color: white;
+  padding: 20px;
+  transition: transform 0.3s ease;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.sidebar h2 {
+  margin-top: 0;
+  font-size: 18px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 12px 0;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background: #333;
+  overflow-y: auto;
+}
+
+/* Sidebar toggle */
+.toggle-btn {
+  display: none;
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 8px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  .toggle-btn {
+    display: block;
   }
-  to {
-    transform: rotate(360deg);
+  .sidebar.closed {
+    display: none;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* ===== Cards / Forms ===== */
+.form-card {
+  background: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.form-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+/* ===== Inputs ===== */
+input[type="text"],
+textarea,
+input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #000;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+input[type="file"] {
+  padding: 6px;
+  background: #fdfdfd;
+  cursor: pointer;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.btn.green {
+  background: #28a745;
+  color: white;
+}
+
+.btn.blue {
+  background: #007bff;
+  color: white;
+}
+
+.btn.red {
+  background: #dc3545;
+  color: white;
+}
+
+.btn.gray {
+  background: #6c757d;
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== QA & Intro List ===== */
+.qa-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.qa-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 15px;
+  background: #333;
+}
+
+.qa-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.no-audio {
+  color: red;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* ===== Receipt Section ===== */
+.qa-card p {
+  margin: 4px 0;
+}
+
+.qa-card a {
+  color: blue;
+  text-decoration: underline;
+}
+
+/* ===== Responsive Content ===== */
+.content-wrapper h1 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .form-card {
+    padding: 15px;
+  }
+  input[type="text"],
+  textarea,
+  input[type="file"] {
+    font-size: 13px;
   }
 }
 
-.card {
-  padding: 2em;
+/* ===== Dashboard Chat ===== */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  background: #1e1e1e;
+  color: white;
 }
 
-.read-the-docs {
-  color: #888;
-} */
+.dashboard-sidebar {
+  width: 260px;
+  background: #2a2a2a;
+  border-right: 1px solid #444;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.dashboard-sidebar h3 {
+  margin: 0 0 10px;
+}
+
+.customer-card {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #333;
+  transition: background 0.2s ease;
+}
+
+.customer-card:hover {
+  background: #444;
+}
+
+.customer-card.active {
+  background: #25d366;
+  color: white;
+}
+
+.customer-card b {
+  display: block;
+}
+
+.customer-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #bbb;
+}
+
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  background: #121212;
+}
+
+.chat-header {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+.chat-message {
+  margin: 8px 0;
+  display: flex;
+}
+
+.chat-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-width: 70%;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.chat-message.ai {
+  justify-content: flex-end;
+}
+
+.chat-message.ai .chat-bubble {
+  background: #25d366;
+  color: white;
+  border-bottom-right-radius: 0;
+}
+
+.chat-message.client {
+  justify-content: flex-start;
+}
+
+.chat-message.client .chat-bubble {
+  background: #333;
+  color: #fff;
+  border-bottom-left-radius: 0;
+}
+
+.chat-timestamp {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+}
