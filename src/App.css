@@ -1,300 +1,115 @@
-/* ===== Layout ===== */
-.app-container {
-  display: flex;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
-}
-
-.sidebar {
-  width: 240px;
-  background: #222;
-  color: white;
-  padding: 20px;
-  transition: transform 0.3s ease;
-}
-
-.sidebar h2 {
-  margin-top: 0;
-  font-size: 18px;
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar li {
-  margin: 12px 0;
-}
-
-.sidebar a {
-  color: white;
-  text-decoration: none;
-}
-
-.sidebar a:hover {
-  text-decoration: underline;
-}
-
-.main-content {
-  flex: 1;
-  padding: 20px;
-  background: #333;
-  overflow-y: auto;
-}
-
-/* Sidebar toggle */
-.toggle-btn {
-  display: none;
-  background: #25d366;
-  color: white;
-  border: none;
-  padding: 8px;
-  font-size: 18px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-bottom: 15px;
-}
-
-@media (max-width: 768px) {
-  .toggle-btn {
-    display: block;
-  }
-  .sidebar.closed {
-    display: none;
-  }
-}
-
-/* ===== Cards / Forms ===== */
-.form-card {
-  background: #333;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.form-card h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-}
-
-/* ===== Inputs ===== */
-input[type="text"],
-textarea,
-input[type="file"] {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  background: #999;
-  color: #000;
-  box-sizing: border-box;
-}
-
-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-input[type="file"] {
-  padding: 6px;
-  background: #999;
-  cursor: pointer;
-}
-
-/* ===== Buttons ===== */
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.btn.green {
-  background: #28a745;
-  color: white;
-}
-
-.btn.blue {
-  background: #007bff;
-  color: white;
-}
-
-.btn.red {
-  background: #dc3545;
-  color: white;
-}
-
-.btn.gray {
-  background: #6c757d;
-  color: white;
-}
-
-.btn:hover {
-  opacity: 0.9;
-}
-
-/* ===== QA & Intro List ===== */
+/* ✅ Shared layout for QA & Intro lists */
 .qa-list {
-  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;              /* space between cards */
   padding: 0;
-  margin: 0;
+  list-style: none;
 }
 
+/* ✅ Shared card styling */
 .qa-card {
+  flex: 1 1 300px;        /* minimum 300px, grow if space */
+  max-width: 400px;       /* prevent full stretch */
+  box-sizing: border-box;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 12px;
-  margin-bottom: 15px;
-  background: #333;
+  background: #;
+  word-wrap: break-word;
 }
 
-.qa-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
+/* ✅ Inputs look better */
+.form-card input[type="text"],
+.form-card input[type="file"],
+.form-card textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
-.no-audio {
-  color: red;
-  font-size: 13px;
-  margin-top: 6px;
+/* ✅ Question input stands out */
+.form-card input[placeholder="Question"] {
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
-/* ===== Receipt Section ===== */
-.qa-card p {
-  margin: 4px 0;
+/* ✅ Consistent spacing for forms */
+.form-card {
+  margin-bottom: 1.5rem;
 }
 
-.qa-card a {
-  color: blue;
+
+/* === SIDEBAR FIX === */
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #2c3e50;
+  color: #fff;
+  padding: 1rem;
+  box-sizing: border-box;
+  transition: transform 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* === TOGGLE BUTTON (always visible) === */
+.toggle-btn {
+  position: fixed;         /* always fixed on screen */
+  top: 10px;
+  left: 10px;
+  background: #1abc9c;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 1100;           /* above sidebar */
+}
+
+/* Sidebar links */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 0.8rem;
+}
+
+.sidebar ul li a {
+  color: #ecf0f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.sidebar ul li a:hover {
   text-decoration: underline;
 }
 
-/* ===== Responsive Content ===== */
-.content-wrapper h1 {
-  font-size: 22px;
-  margin-bottom: 20px;
+/* === MAIN CONTENT === */
+.main-content {
+  margin-left: 250px;
+  padding: 1.5rem;
+  transition: margin-left 0.3s ease;
 }
 
-@media (max-width: 600px) {
-  .form-card {
-    padding: 15px;
-  }
-  input[type="text"],
-  textarea,
-  input[type="file"] {
-    font-size: 13px;
-  }
-}
-
-/* ===== Dashboard Chat ===== */
-.dashboard-container {
-  display: flex;
-  height: 100vh;
-  background: #1e1e1e;
-  color: white;
-}
-
-.dashboard-sidebar {
-  width: 260px;
-  background: #2a2a2a;
-  border-right: 1px solid #444;
-  padding: 15px;
-  overflow-y: auto;
-}
-
-.dashboard-sidebar h3 {
-  margin: 0 0 10px;
-}
-
-.customer-card {
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #333;
-  transition: background 0.2s ease;
-}
-
-.customer-card:hover {
-  background: #444;
-}
-
-.customer-card.active {
-  background: #25d366;
-  color: white;
-}
-
-.customer-card b {
-  display: block;
-}
-
-.customer-card p {
-  margin: 0;
-  font-size: 13px;
-  color: #bbb;
-}
-
-.chat-window {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-  background: #121212;
-}
-
-.chat-header {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 10px;
-}
-
-.chat-message {
-  margin: 8px 0;
-  display: flex;
-}
-
-.chat-bubble {
-  padding: 10px 14px;
-  border-radius: 12px;
-  max-width: 70%;
-  font-size: 14px;
-  line-height: 1.4;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
-
-.chat-message.ai {
-  justify-content: flex-end;
-}
-
-.chat-message.ai .chat-bubble {
-  background: #25d366;
-  color: white;
-  border-bottom-right-radius: 0;
-}
-
-.chat-message.client {
-  justify-content: flex-start;
-}
-
-.chat-message.client .chat-bubble {
-  background: #333;
-  color: #fff;
-  border-bottom-left-radius: 0;
-}
-
-.chat-timestamp {
-  font-size: 11px;
-  color: #aaa;
-  margin-top: 4px;
+.sidebar.closed ~ .main-content {
+  margin-left: 0;
 }
