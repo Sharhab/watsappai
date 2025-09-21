@@ -200,7 +200,7 @@ export default function App() {
       alert("Intro sequence saved.");
     } catch (err) {
       console.error("Upload failed:", err);
-      alert("Failed to save intro sequence.");
+      alert("Failed to save intro sequence.", err);
     }
   };
 
