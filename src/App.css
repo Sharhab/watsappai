@@ -36,6 +36,8 @@
 .form-card input[placeholder="Question"] {
   font-size: 1.1rem;
   font-weight: 500;
+  padding: 4px;
+  width: 100%;
 }
 
 /* ✅ Consistent spacing for forms */
@@ -112,4 +114,130 @@
 
 .sidebar.closed ~ .main-content {
   margin-left: 0;
+}
+
+/* === CHAT CONTAINER LAYOUT === */
+.chat-container {
+  display: flex;
+  height: 100vh;
+  background: #f0f2f5; /* light WhatsApp-like bg */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* === SIDEBAR === */
+.chat-sidebar {
+  width: 280px;
+  background: #fff;
+  border-right: 1px solid #ddd;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.chat-sidebar h3 {
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.sidebar-item {
+  padding: 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sidebar-item:hover {
+  background: #f5f5f5;
+}
+
+.sidebar-item.active {
+  background: #e6f7ff;
+  border-left: 4px solid #1890ff;
+}
+
+.sidebar-item b {
+  display: block;
+  color: #333;
+}
+
+.sidebar-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === CHAT WINDOW === */
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #efeae2 url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.chat-window h3 {
+  margin-bottom: 1rem;
+  color: #444;
+  font-weight: 600;
+}
+
+/* === MESSAGES === */
+.message {
+  max-width: 70%;
+  margin-bottom: 1rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* User bubble (right) */
+.message.user {
+  background: #dcf8c6;
+  margin-left: auto;
+  text-align: left;
+}
+
+/* AI bubble (left) */
+.message.ai {
+  background: #fff;
+  border: 1px solid #ddd;
+  margin-right: auto;
+}
+
+/* Timestamp */
+.timestamp {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* === MEDIA ELEMENTS === */
+.message audio,
+.message video,
+.message img {
+  display: block;
+  margin-top: 5px;
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+/* Scrollbars */
+.chat-sidebar::-webkit-scrollbar,
+.chat-window::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-sidebar::-webkit-scrollbar-thumb,
+.chat-window::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
 }

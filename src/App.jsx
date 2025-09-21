@@ -200,7 +200,7 @@ export default function App() {
       alert("Intro sequence saved.");
     } catch (err) {
       console.error("Upload failed:", err);
-      alert("Failed to save intro sequence.");
+      alert("Failed to save intro sequence.", err);
     }
   };
 
@@ -384,7 +384,7 @@ export default function App() {
                             <p><b>Step {i + 1}:</b> {step.type}</p>
                             {step.type === "text" && <p>{step.content}</p>}
                             {step.type === "video" && step.fileUrl && (
-                              <video controls src={resolveUrl(step.fileUrl)} />
+                              <video controls src={resolveUrl(step.fileUrl)} style={{width: 250, height: 250}}/>
                             )}
                             {step.type === "audio" && step.fileUrl && (
                               <audio controls src={resolveUrl(step.fileUrl)} />
