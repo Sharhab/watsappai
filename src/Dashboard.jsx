@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [chat, setChat] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Load conversation list
   useEffect(() => {
     fetch(`${BACKEND_BASE}/api/conversations`)
       .then((res) => res.json())
@@ -16,18 +17,37 @@ export default function Dashboard() {
       .catch((err) => console.error("Error loading conversations:", err));
   }, []);
 
+  // Load selected chat
   useEffect(() => {
     if (!selectedPhone) return;
     setLoading(true);
     fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}`)
       .then((res) => res.json())
-      .then((data) => setChat(data.history || []))
+      .then((data) => setChat(data.conversationHistory || []))
       .catch((err) => console.error("Error loading chat:", err))
       .finally(() => setLoading(false));
   }, [selectedPhone]);
 
+  // Render one message (text / audio / video / image)
+  const renderMessageContent = (msg) => {
+    if (msg.type === "text") {
+      return <p>{msg.text}</p>;
+    }
+    if (msg.type === "audio") {
+      return <audio controls src={msg.url}></audio>;
+    }
+    if (msg.type === "video") {
+      return <video controls src={msg.url} width="250"></video>;
+    }
+    if (msg.type === "image") {
+      return <img src={msg.url} alt="attachment" width="200" />;
+    }
+    return <p>Unsupported message type</p>;
+  };
+
   return (
     <div className="chat-container">
+      {/* Sidebar */}
       <div className="chat-sidebar">
         <h3>📱 Customers</h3>
         {conversations.map((conv) => (
@@ -41,6 +61,8 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* Chat window */}
       <div className="chat-window">
         {!selectedPhone && <p>Select a customer to view chat</p>}
         {selectedPhone && (
@@ -51,9 +73,9 @@ export default function Dashboard() {
             ) : (
               chat.map((msg, i) => (
                 <div key={i} className={`message ${msg.from === "ai" ? "ai" : "user"}`}>
-                  {msg.text}
+                  {renderMessageContent(msg)}
                   <div className="timestamp">
-                    {new Date(msg.timestamp).toLocaleString()}
+                    {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ""}
                   </div>
                 </div>
               ))
