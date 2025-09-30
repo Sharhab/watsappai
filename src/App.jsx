@@ -384,11 +384,8 @@ export default function App() {
                             <p><b>Step {i + 1}:</b> {step.type}</p>
                             {step.type === "text" && <p>{step.content}</p>}
                             {step.type === "video" && step.fileUrl && (
-<<<<<<< HEAD
-                              <video controls src={resolveUrl(step.fileUrl)} style={{width: 250, height: 250}}/>
-=======
-                              <video controls src={resolveUrl(step.fileUrl)} style={{width: 250, heights: 250}}/>
->>>>>>> 27677e3b55c46cbdfac92f2bbe2004a10ff21125
+                              <><video controls src={resolveUrl(step.fileUrl)} style={{ width: 250, height: 250 }} />
+                              <video controls src={resolveUrl(step.fileUrl)} style={{ width: 250, heights: 250 }} /></>
                             )}
                             {step.type === "audio" && step.fileUrl && (
                               <audio controls src={resolveUrl(step.fileUrl)} />

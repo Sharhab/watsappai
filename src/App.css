@@ -15,7 +15,7 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 12px;
-  background: #;
+  background: #333;
   word-wrap: break-word;
 }
 
@@ -36,15 +36,12 @@
 .form-card input[placeholder="Question"] {
   font-size: 1.1rem;
   font-weight: 500;
-<<<<<<< HEAD
   padding: 6px;
   width: 90%;
   height: 20%;
   gap: 6px;
-=======
   padding: 4px;
   width: 100%;
->>>>>>> 27677e3b55c46cbdfac92f2bbe2004a10ff21125
 }
 
 /* ✅ Consistent spacing for forms */
@@ -153,7 +150,7 @@
   padding: 0.7rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: 0.2s;
 }
 
 .sidebar-item:hover {
@@ -248,8 +245,7 @@
 .chat-window::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
-<<<<<<< HEAD
+
 }
-=======
-}
->>>>>>> 27677e3b55c46cbdfac92f2bbe2004a10ff21125
+
+
