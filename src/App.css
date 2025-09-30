@@ -36,13 +36,16 @@
 .form-card input[placeholder="Question"] {
   font-size: 1.1rem;
   font-weight: 500;
-  padding: 4px;
-  width: 100%;
+  padding: 6px;
+  width: 90%;
+  height: 20%;
+  gap: 6px;
 }
 
 /* ✅ Consistent spacing for forms */
 .form-card {
   margin-bottom: 1.5rem;
+  gap: 6px;
 }
 
 

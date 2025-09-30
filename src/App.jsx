@@ -243,7 +243,7 @@ export default function App() {
                     <form onSubmit={handleAddQA} className="form-card">
                       <h3>Add New QA</h3>
                       <input
-                        value={question}
+                        value={question} 
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="Question"
                         required
