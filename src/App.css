@@ -36,10 +36,15 @@
 .form-card input[placeholder="Question"] {
   font-size: 1.1rem;
   font-weight: 500;
+<<<<<<< HEAD
   padding: 6px;
   width: 90%;
   height: 20%;
   gap: 6px;
+=======
+  padding: 4px;
+  width: 100%;
+>>>>>>> 27677e3b55c46cbdfac92f2bbe2004a10ff21125
 }
 
 /* ✅ Consistent spacing for forms */
@@ -243,4 +248,8 @@
 .chat-window::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 27677e3b55c46cbdfac92f2bbe2004a10ff21125
