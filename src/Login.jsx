@@ -18,9 +18,10 @@ export default function Login() {
     setMsg("");
 
     try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
+      const res = await fetch("https://watsappai2.onrender.com/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",  "Authorization": `Bearer ${localStorage.getItem("token")}`,
+    "x-tenant-id": localStorage.getItem("tenantId"),},
         body: JSON.stringify({ email, password, phone }),
       });
 
