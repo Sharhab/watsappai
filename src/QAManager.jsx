@@ -108,17 +108,41 @@ export default function QAManager() {
       {/* QA List */}
       <h2>Saved QAs {loading && "Loading…"}</h2>
       <ul className="qa-list">
-        {qas.map((qa) => (
-          <li key={qa._id} className="qa-card">
-            <div><b>Q:</b> {qa.question}</div>
-            <div><b>A:</b> {qa.answerText}</div>
-            {qa.answerAudio ? <audio controls src={qa.answerAudio} /> : <div className="no-audio">⚠️ No audio</div>}
-            <div className="qa-actions">
-              <button onClick={() => { setEditId(qa._id); setEditQuestion(qa.question); setEditAnswerText(qa.answerText); }} className="btn blue">Edit</button>
-              <button onClick={() => handleDelete(qa._id)} className="btn red">Delete</button>
-            </div>
-          </li>
-        ))}
+       {Array.isArray(qas) && qas.length > 0 ? (
+    qas.map((qa) => (
+      <li key={qa._id} className="qa-card">
+        <div><b>Q:</b> {qa.question}</div>
+        <div><b>A:</b> {qa.answerText}</div>
+        
+        {qa.answerAudio ? (
+          <audio controls src={qa.answerAudio} />
+        ) : (
+          <div className="no-audio">⚠️ No audio</div>
+        )}
+
+        <div className="qa-actions">
+          <button
+            onClick={() => {
+              setEditId(qa._id);
+              setEditQuestion(qa.question);
+              setEditAnswerText(qa.answerText);
+            }}
+            className="btn blue"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDelete(qa._id)}
+            className="btn red"
+          >
+            Delete
+          </button>
+        </div>
+      </li>
+    ))
+  ) : (
+    <li className="qa-empty">No QAs available</li>
+  )}
       </ul>
     </div>
   );
