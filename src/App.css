@@ -248,4 +248,186 @@
 
 }
 
+/* === AUTH CONTAINER === */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* === AUTH CARD === */
+.auth-card {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  animation: fadeIn 0.6s ease;
+}
+
+/* Headings */
+.auth-card h2 {
+  margin-bottom: 1rem;
+  color: #2c3e50;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.auth-card p {
+  margin-bottom: 2rem;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+/* Inputs */
+.auth-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+.auth-card input:focus {
+  border-color: #1abc9c;
+  outline: none;
+  box-shadow: 0 0 6px rgba(26, 188, 156, 0.4);
+}
+
+/* Buttons */
+.auth-card button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+/* Login button (primary) */
+.auth-card button.login {
+  background: #1abc9c;
+  color: #fff;
+}
+
+.auth-card button.login:hover {
+  background: #16a085;
+}
+
+/* Register button (secondary) */
+.auth-card button.register {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.auth-card button.register:hover {
+  background: #bdc3c7;
+}
+
+/* Toggle link */
+.auth-toggle {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #3498db;
+  cursor: pointer;
+}
+
+.auth-toggle:hover {
+  text-decoration: underline;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* src/App.css */
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  padding: 20px;
+}
+
+.register-form {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.register-form h2 {
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  color: #333;
+  text-align: center;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.register-form input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  outline: none;
+}
+
+.register-form button {
+  width: 100%;
+  padding: 12px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.register-form button:hover {
+  background: #3730a3;
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
