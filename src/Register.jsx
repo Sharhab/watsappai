@@ -41,9 +41,11 @@ export default function Register() {
       console.log("✅ Registered:", data);
 
       if (data.success) {
-        // Save into context
+        // Save into context + localStorage
         setToken(data.token);
         setTenantId(data.tenant);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("tenantId", data.tenant);
 
         setMsg("✅ Registration successful! Redirecting...");
         setTimeout(() => navigate("/"), 1000);

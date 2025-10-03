@@ -57,7 +57,7 @@ export default function App() {
 
               {/* Protected */}
               <Route path="/" element={
-                <QAManager />
+                <ProtectedRoute><QAManager /></ProtectedRoute>
               }/>
               <Route path="/intro" element={
                 <ProtectedRoute><IntroManager /></ProtectedRoute>

@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
 
-//const BACKEND_BASE = "https://watsappai2.onrender.com";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -20,8 +18,7 @@ export default function Login() {
     try {
       const res = await fetch("https://watsappai2.onrender.com/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json",  "Authorization": `Bearer ${localStorage.getItem("token")}`,
-    "x-tenant-id": localStorage.getItem("tenantId"),},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, phone }),
       });
 
@@ -29,7 +26,10 @@ export default function Login() {
       if (data.success) {
         console.log("✅ Login successful:", data);
 
-        // Save into context + localStorage
+        // Save into localStorage + context
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("tenantId", data.tenant);
+
         setToken(data.token);
         setTenantId(data.tenant);
 

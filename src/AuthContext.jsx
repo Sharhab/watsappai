@@ -1,29 +1,38 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
-const AuthCtx = createContext(null);
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") || "");
+  const [state, setState] = useState({
+    token: localStorage.getItem("token") || null,
+    tenantId: localStorage.getItem("tenantId") || null,
+  });
 
-  useEffect(() => {
-    if (token) localStorage.setItem("token", token);
-    else localStorage.removeItem("token");
-  }, [token]);
+  const setToken = (token) => {
+    if (token) {
+      localStorage.setItem("token", token);
+    } else {
+      localStorage.removeItem("token");
+    }
+    setState((prev) => ({ ...prev, token }));
+  };
 
-  useEffect(() => {
-    if (tenantId) localStorage.setItem("tenantId", tenantId);
-    else localStorage.removeItem("tenantId");
-  }, [tenantId]);
+  const setTenantId = (tenantId) => {
+    if (tenantId) {
+      localStorage.setItem("tenantId", tenantId);
+    } else {
+      localStorage.removeItem("tenantId");
+    }
+    setState((prev) => ({ ...prev, tenantId }));
+  };
 
-  const value = useMemo(() => ({
-    token, tenantId, setToken, setTenantId,
-    logout: () => { setToken(""); setTenantId(""); }
-  }), [token, tenantId]);
-
-  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
+  return (
+    <AuthContext.Provider value={{ ...state, setToken, setTenantId }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-  return useContext(AuthCtx);
+  return useContext(AuthContext);
 }
