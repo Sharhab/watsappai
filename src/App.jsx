@@ -6,6 +6,9 @@ import ReceiptsManager from "./ReceiptsManager";
 import Dashboard from "./Dashboard";
 import Login from "./Login";
 import Register from "./Register";
+import PaymentPage from "./PaymentPage";
+import PaymentMethod from "./PaymentMethod";
+
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider, useAuth } from "./AuthContext";
 import "./App.css";
@@ -68,6 +71,14 @@ export default function App() {
               <Route path="/dashboard" element={
                 <ProtectedRoute><Dashboard /></ProtectedRoute>
               }/>
+
+              <Route path="/payment" element={
+  <ProtectedRoute><PaymentPage /></ProtectedRoute>
+}/>
+<Route path="/payment-method" element={
+  <ProtectedRoute><PaymentMethod /></ProtectedRoute>
+}/>
+
             </Routes>
           </main>
         </div>
