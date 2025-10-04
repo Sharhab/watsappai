@@ -34,7 +34,7 @@ export default function Login() {
         setTenantId(data.tenant);
 
         setMsg("✅ Login successful! Redirecting...");
-        setTimeout(() => navigate("/payment-method"), 1000);
+        setTimeout(() => navigate("/payment"), 1000);
       } else {
         console.error("❌ Login failed:", data.error);
         setMsg(data.error || "Login failed");
