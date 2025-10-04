@@ -42,54 +42,57 @@ export default function IntroManager() {
     );
   };
 
-  const handleSaveIntro = async (e) => {
-    e.preventDefault();
+const handleSaveIntro = async (e) => {
+  e.preventDefault();
 
-    // Enforce correct order
-    const expected = ["video", "video", "audio", "audio", "text", "audio"];
-    const okOrder =
-      sequence.length === expected.length &&
-      sequence.every((s, i) => s.type === expected[i]);
+  const expected = ["video", "video", "audio", "audio", "text", "audio"];
+  const okOrder =
+    sequence.length === expected.length &&
+    sequence.every((s, i) => s.type === expected[i]);
 
-    if (!okOrder) {
-      alert("Order must be: 2 videos, 2 audios, 1 text, 1 closing audio");
-      return;
-    }
+  if (!okOrder) {
+    alert("Order must be: 2 videos, 2 audios, 1 text, 1 closing audio");
+    return;
+  }
 
-    if (!sequence[2].file || !sequence[3].file) {
-      alert("Two audios before text are required.");
-      return;
-    }
-    if (!sequence[5].file) {
-      alert("Closing audio is required.");
-      return;
-    }
-    if (!sequence[4].content.trim()) {
-      alert("Text step cannot be empty.");
-      return;
-    }
+  const token = localStorage.getItem("token");
+  const tenantId = localStorage.getItem("tenantId");
 
-    try {
-      const formData = new FormData();
-      sequence.forEach((step, i) => {
-        if (step.type === "text") {
-          formData.append(`step${i}_content`, step.content);
-        } else if (step.file) {
-          formData.append(`step${i}_file`, step.file);
-        }
-      });
-      formData.append("sequence", JSON.stringify(sequence));
+  if (!token || !tenantId) {
+    alert("Missing authentication — please log in again.");
+    return;
+  }
 
-      const res = await fetch(INTRO_URL, { method: "POST", body: formData });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      if (data?.intro?.sequence) setIntro(data.intro.sequence);
-      alert("Intro saved successfully!");
-    } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Failed to save intro.");
-    }
-  };
+  try {
+    const formData = new FormData();
+    sequence.forEach((step, i) => {
+      if (step.type === "text") {
+        formData.append(`step${i}_content`, step.content);
+      } else if (step.file) {
+        formData.append(`step${i}_file`, step.file);
+      }
+    });
+    formData.append("sequence", JSON.stringify(sequence));
+
+    const res = await fetch(INTRO_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-tenant-id": tenantId,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    if (data?.intro?.sequence) setIntro(data.intro.sequence);
+    alert("✅ Intro saved successfully!");
+  } catch (err) {
+    console.error("❌ Upload failed:", err);
+    alert("Failed to save intro.");
+  }
+};
 
   const handleDeleteIntro = async (index) => {
     if (!window.confirm("Delete this intro step?")) return;
