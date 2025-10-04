@@ -1,33 +1,30 @@
-import React, { createContext, useContext, useState } from "react";
+// src/AuthContext.jsx
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [state, setState] = useState({
-    token: localStorage.getItem("token") || null,
-    tenantId: localStorage.getItem("tenantId") || null,
-  });
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId"));
 
-  const setToken = (token) => {
-    if (token) {
-      localStorage.setItem("token", token);
-    } else {
-      localStorage.removeItem("token");
-    }
-    setState((prev) => ({ ...prev, token }));
-  };
+  useEffect(() => {
+    if (token) localStorage.setItem("token", token);
+    else localStorage.removeItem("token");
 
-  const setTenantId = (tenantId) => {
-    if (tenantId) {
-      localStorage.setItem("tenantId", tenantId);
-    } else {
-      localStorage.removeItem("tenantId");
-    }
-    setState((prev) => ({ ...prev, tenantId }));
-  };
+    if (tenantId) localStorage.setItem("tenantId", tenantId);
+    else localStorage.removeItem("tenantId");
+  }, [token, tenantId]);
+
+const logout = () => {
+  setToken(null);
+  setTenantId(null);
+  localStorage.removeItem("token");
+  localStorage.removeItem("tenantId");
+  window.location.href = "/login"; // also force redirect
+};
 
   return (
-    <AuthContext.Provider value={{ ...state, setToken, setTenantId }}>
+    <AuthContext.Provider value={{ token, tenantId, setToken, setTenantId, logout }}>
       {children}
     </AuthContext.Provider>
   );

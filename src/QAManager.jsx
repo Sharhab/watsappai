@@ -18,14 +18,14 @@ export default function QAManager() {
   const [editAnswerAudio, setEditAnswerAudio] = useState(null);
 
   // 🔄 Load QAs
-  useEffect(() => {
-    setLoading(true);
-    tenantFetch(API_URL)
-      .then((res) => res.json())
-      .then((data) => setQAs(data.qas || [])) // ✅ use { qas }
-      .catch((err) => console.error("Error loading QAs:", err))
-      .finally(() => setLoading(false));
-  }, []);
+useEffect(() => {
+  setLoading(true);
+  tenantFetch("/api/qas")
+    .then((res) => res.json())
+    .then((data) => setQAs(data.qas || []))
+    .catch((err) => console.error("Error loading QAs:", err))
+    .finally(() => setLoading(false));
+}, []);
 
   // ➕ Add QA
   const handleAddQA = async (e) => {
