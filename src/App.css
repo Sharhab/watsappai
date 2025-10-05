@@ -642,3 +642,54 @@ h1, h2, h3 {
     flex-direction: column;
   }
 }
+
+
+/* Payment page styles */
+.payment-methods {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.bank-info {
+  background: #f9f9f9;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.status-msg.red {
+  color: #c0392b;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+
+/* Spinner animation */
+.spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Button disabled state */
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
