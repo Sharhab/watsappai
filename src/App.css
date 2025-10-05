@@ -693,3 +693,17 @@ button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+.status-msg {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.status-msg.success {
+  color: green;
+}
+
+.status-msg.error {
+  color: red;
+}
