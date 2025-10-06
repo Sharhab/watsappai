@@ -8,10 +8,11 @@ import Login from "./Login";
 import Register from "./Register";
 import PaymentPage from "./PaymentPage";
 import PaymentMethod from "./PaymentMethod";
-
+import TwilioSetup from "./TwilioSetup";
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider, useAuth } from "./AuthContext";
 import "./App.css";
+
 
 function Sidebar({ open, setOpen }) {
   const { token, tenantId, logout } = useAuth();
@@ -73,11 +74,16 @@ export default function App() {
               }/>
 
               <Route path="/payment" element={
-  <ProtectedRoute><PaymentPage /></ProtectedRoute>
-}/>
-<Route path="/payment-method" element={
-  <ProtectedRoute><PaymentMethod /></ProtectedRoute>
-}/>
+             <ProtectedRoute><PaymentPage /></ProtectedRoute>
+             }/>
+         <Route path="/payment-method" element={
+         <ProtectedRoute><PaymentMethod /></ProtectedRoute>
+           }/>
+
+    <Route path="/business-setup" element={
+    <ProtectedRoute><TwilioSetup /></ProtectedRoute>
+      }/>
+
 
             </Routes>
           </main>
