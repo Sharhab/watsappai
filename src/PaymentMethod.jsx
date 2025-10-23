@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BACKEND_BASE } from "./api";
 import { useAuth } from "./AuthContext";
+import jwtDecode from "jwt-decode"; // ✅ corrected import (default export)
 import "./App.css";
 
 export default function PaymentMethod() {
@@ -10,7 +11,7 @@ export default function PaymentMethod() {
   const params = new URLSearchParams(useLocation().search);
   const plan = params.get("plan");
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [loadingCard, setLoadingCard] = useState(false);
   const [loadingTransfer, setLoadingTransfer] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
@@ -20,11 +21,31 @@ export default function PaymentMethod() {
     if (!plan) return alert("No plan selected.");
     setError("");
 
-    // Set individual button loading
     if (method === "card") setLoadingCard(true);
     if (method === "transfer") setLoadingTransfer(true);
 
     try {
+      // ✅ Ensure we have a valid user with email
+      let currentUser = user || JSON.parse(localStorage.getItem("user")) || {};
+      let decoded = {};
+
+      if (token) {
+        try {
+          decoded = jwtDecode(token);
+        } catch (e) {
+          console.warn("⚠️ Failed to decode token:", e.message);
+        }
+      }
+
+      currentUser.email = currentUser.email || decoded.email || "";
+      currentUser.id = currentUser.id || decoded.id || "";
+
+      if (!currentUser.email) {
+        throw new Error("Missing user email — please re-login.");
+      }
+
+      console.log("🧾 Initiating Paystack payment for:", currentUser.email);
+
       const res = await fetch(`${BACKEND_BASE}/api/payments/initiate`, {
         method: "POST",
         headers: {
@@ -34,7 +55,7 @@ export default function PaymentMethod() {
         body: JSON.stringify({
           planId: plan,
           method,
-          user: JSON.parse(localStorage.getItem("user")) || {},
+          user: currentUser,
         }),
       });
 
@@ -43,9 +64,15 @@ export default function PaymentMethod() {
 
       setPaymentInfo(data.result);
 
-      // redirect if card
+      // ✅ Redirect to Paystack Checkout
       if (method === "card" && data.result.checkoutUrl) {
+        console.log("🌐 Redirecting to Paystack Checkout...");
         window.location.href = data.result.checkoutUrl;
+      }
+
+      // ✅ Show account info if transfer
+      if (method === "transfer" && data.result.accounts) {
+        console.log("🏦 Paystack dedicated account generated");
       }
     } catch (err) {
       console.error("❌ Payment error:", err);
@@ -69,11 +96,7 @@ export default function PaymentMethod() {
           disabled={loadingCard}
           onClick={() => handlePayment("card")}
         >
-          {loadingCard ? (
-            <span className="spinner"></span>
-          ) : (
-            "Pay with Monnify"
-          )}
+          {loadingCard ? <span className="spinner"></span> : "Pay with Paystack"}
         </button>
 
         <button
@@ -81,11 +104,7 @@ export default function PaymentMethod() {
           disabled={loadingTransfer}
           onClick={() => handlePayment("transfer")}
         >
-          {loadingTransfer ? (
-            <span className="spinner"></span>
-          ) : (
-            "Pay via Bank Transfer"
-          )}
+          {loadingTransfer ? <span className="spinner"></span> : "Pay via Bank Transfer"}
         </button>
       </div>
 
@@ -97,15 +116,9 @@ export default function PaymentMethod() {
           <h3>🏦 Bank Transfer Details</h3>
           {paymentInfo.accounts.map((acc, i) => (
             <div key={i} className="bank-info">
-              <p>
-                <b>Bank:</b> {acc.bankName}
-              </p>
-              <p>
-                <b>Account Number:</b> {acc.accountNumber}
-              </p>
-              <p>
-                <b>Account Name:</b> {acc.accountName}
-              </p>
+              <p><b>Bank:</b> {acc.bankName}</p>
+              <p><b>Account Number:</b> {acc.accountNumber}</p>
+              <p><b>Account Name:</b> {acc.accountName}</p>
             </div>
           ))}
           <button

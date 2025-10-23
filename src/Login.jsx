@@ -30,8 +30,8 @@ export default function Login() {
       if (data.success) {
         console.log("✅ Login successful:", data);
         localStorage.setItem("token", data.token);
-        localStorage.setItem("tenantId", data.tenant);
-        localStorage.setItem("user", JSON.stringify(data.user || {}));
+      localStorage.setItem("user", JSON.stringify(data.user || {}));
+      localStorage.setItem("email", data.email);
 
         setToken(data.token);
         setTenantId(data.tenant);
