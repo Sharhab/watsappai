@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BACKEND_BASE } from "./api";
 import { useAuth } from "./AuthContext";
-import jwtDecode from "jwt-decode"; // ✅ corrected import (default export)
+import { jwtDecode } from "jwt-decode";
 import "./App.css";
 
 export default function PaymentMethod() {
