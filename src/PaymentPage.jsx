@@ -12,7 +12,7 @@ export default function PaymentPage() {
     {
       id: "basic",
       name: "Basic Plan",
-      price: "₦3,000",
+      price: "₦30,000",
       duration: "1 Month",
       features: [
         "AI WhatsApp Chat Assistant",
@@ -24,7 +24,7 @@ export default function PaymentPage() {
     {
       id: "medium",
       name: "Medium Plan",
-      price: "₦8,000",
+      price: "₦80,000",
       duration: "3 Months",
       features: [
         "Everything in Basic",
@@ -36,7 +36,7 @@ export default function PaymentPage() {
     {
       id: "pro",
       name: "Pro Plan",
-      price: "₦30,000",
+      price: "₦240,000",
       duration: "1 Year",
       features: [
         "Everything in Medium",
