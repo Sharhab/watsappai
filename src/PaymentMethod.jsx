@@ -70,3 +70,5 @@ const handlePayment = async (method) => {
     setLoadingTransfer(false);
   }
 };
+
+export default PaymentMethod; // ✅ Ensure this exists
