@@ -54,8 +54,9 @@ export default function PaymentPage() {
       alert("Please select a plan to continue.");
       return;
     }
-    // Simulate redirect to payment page (Monnify)
-    navigate(`/payment-method?plan=${selectedPlan.id}`);
+
+    // ✅ Correct way → send plan using router state
+    navigate("/payment-method", { state: { plan: selectedPlan.id } });
   };
 
   return (

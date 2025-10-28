@@ -7,7 +7,7 @@ import Dashboard from "./Dashboard";
 import Login from "./Login";
 import Register from "./Register";
 import PaymentPage from "./PaymentPage";
-import { PaymentMethod } from "./PaymentMethod";
+import  PaymentMethod  from "./PaymentMethod";
 import TwilioSetup from "./TwilioSetup";
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider, useAuth } from "./AuthContext";
