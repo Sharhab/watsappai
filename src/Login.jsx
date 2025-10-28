@@ -53,6 +53,7 @@ export default function Login() {
   return (
     <div className="auth-container">
       <form onSubmit={handleSubmit} className="auth-card">
+        <h1>GLOBSTAND TECHNOLOGIES</h1>
         <h2>🔑 Login</h2>
 
         <input

@@ -61,7 +61,9 @@ export default function PaymentPage() {
 
   return (
     <div className="content-wrapper">
-      <h1>💳 Choose Your Plan</h1>
+
+      <h1>GLOBSTAND TECHNOLOGIES</h1>
+      <h2>💳 Choose Your Plan</h2>
       <p style={{ textAlign: "center" }}>
         Choose the plan that fits your business needs and start using your WhatsApp AI Agent.
       </p>

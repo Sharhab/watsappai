@@ -87,7 +87,7 @@ useEffect(() => {
 
   return (
     <div className="content-wrapper">
-      <h1>Herbal Medicine Q&A Manager</h1>
+      <h1>GLOBSTAND TECHNOLOGIES Q&A Manager</h1>
 
       {/* Add QA form */}
       {!editId && (
