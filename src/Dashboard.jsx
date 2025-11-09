@@ -10,27 +10,35 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
 
   // ✅ Get tenant from login
-  const tenant = localStorage.getItem("tenant");
-
   // ✅ Load conversations list (tenant-aware)
-  useEffect(() => {
-    if (!tenant) return;
-    fetch(`${BACKEND_BASE}/api/${tenant}/conversations`)
-      .then((res) => res.json())
-      .then((data) => setConversations(data.conversations || []))
-      .catch((err) => console.error("Error loading conversations:", err));
-  }, [tenant]);
+ // Load conversation list
+useEffect(() => {
+  fetch(`${BACKEND_BASE}/api/conversations`, {
+    headers: {
+      "x-tenant-id": localStorage.getItem("tenant")
+    }
+  })
+    .then((res) => res.json())
+    .then((data) => setConversations(data.conversations || []))
+    .catch((err) => console.error("Error loading conversations:", err));
+}, []);
 
-  // ✅ Load selected chat
-  useEffect(() => {
-    if (!selectedPhone || !tenant) return;
-    setLoading(true);
-    fetch(`${BACKEND_BASE}/api/${tenant}/conversations/${selectedPhone}`)
-      .then((res) => res.json())
-      .then((data) => setChat(data.conversationHistory || []))
-      .catch((err) => console.error("Error loading chat:", err))
-      .finally(() => setLoading(false));
-  }, [selectedPhone, tenant]);
+// Load selected chat
+useEffect(() => {
+  if (!selectedPhone) return;
+  setLoading(true);
+
+  fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}`, {
+    headers: {
+      "x-tenant-id": localStorage.getItem("tenant")
+    }
+  })
+    .then((res) => res.json())
+    .then((data) => setChat(data.conversationHistory || []))
+    .catch((err) => console.error("Error loading chat:", err))
+    .finally(() => setLoading(false));
+}, [selectedPhone]);
+
 
   // ✅ Render message based on type
   const renderMessageContent = (msg) => {
