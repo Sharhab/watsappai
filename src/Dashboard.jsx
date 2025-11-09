@@ -31,18 +31,18 @@ export default function Dashboard() {
   // Render one message (text / audio / video / image)
   const renderMessageContent = (msg) => {
     if (msg.type === "text") {
-      return <p>{msg.text}</p>;
+      return <p>{msg.content}</p>;
     }
     if (msg.type === "audio") {
-      return <audio controls src={msg.url}></audio>;
+      return <audio controls src={msg.content}></audio>;
     }
     if (msg.type === "video") {
-      return <video controls src={msg.url} width="250"></video>;
+      return <video controls src={msg.content} width="250"></video>;
     }
     if (msg.type === "image") {
-      return <img src={msg.url} alt="attachment" width="200" />;
+      return <img src={msg.content} alt="attachment" width="200" />;
     }
-    return <p>Unsupported message type</p>;
+    return <p>[Unsupported type]</p>;
   };
 
   return (
@@ -50,11 +50,14 @@ export default function Dashboard() {
       {/* Sidebar */}
       <div className="chat-sidebar">
         <h3>📱 Customers</h3>
+
         {conversations.map((conv) => (
           <div
             key={conv.phone}
             onClick={() => setSelectedPhone(conv.phone)}
-            className={`sidebar-item ${selectedPhone === conv.phone ? "active" : ""}`}
+            className={`sidebar-item ${
+              selectedPhone === conv.phone ? "active" : ""
+            }`}
           >
             <b>{conv.phone}</b>
             <p>{conv.lastMessage || "No messages yet"}</p>
@@ -65,17 +68,25 @@ export default function Dashboard() {
       {/* Chat window */}
       <div className="chat-window">
         {!selectedPhone && <p>Select a customer to view chat</p>}
+
         {selectedPhone && (
           <>
             <h3>💬 Conversation with {selectedPhone}</h3>
+
             {loading ? (
               <p>Loading chat...</p>
             ) : (
               chat.map((msg, i) => (
-                <div key={i} className={`message ${msg.from === "ai" ? "ai" : "user"}`}>
+                <div
+                  key={i}
+                  className={`message ${msg.sender === "ai" ? "ai" : "user"}`}
+                >
                   {renderMessageContent(msg)}
+
                   <div className="timestamp">
-                    {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ""}
+                    {msg.timestamp
+                      ? new Date(msg.timestamp).toLocaleString()
+                      : ""}
                   </div>
                 </div>
               ))
