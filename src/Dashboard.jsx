@@ -38,15 +38,26 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [selectedPhone]);
 
-  const renderMessageContent = (msg) => {
-    switch (msg.type) {
-      case "text": return <p>{msg.content}</p>;
-      case "audio": return <audio controls src={msg.content}></audio>;
-      case "video": return <video controls src={msg.content} width="250"></video>;
-      case "image": return <img src={msg.content} alt="" width="200" />;
-      default: return <p>[unknown type]</p>;
-    }
-  };
+const renderMessageContent = (msg) => {
+  if (!msg || !msg.content) return <p>[empty]</p>;
+
+  switch (msg.type) {
+    case "text":
+      return <p>{msg.content}</p>;
+
+    case "audio":
+      return <audio controls src={msg.content}></audio>;
+
+    case "video":
+      return <video controls src={msg.content} width="250"></video>;
+
+    case "image":
+      return <img src={msg.content} alt="" width="200" />;
+
+    default:
+      return <p>[unknown type: {msg.type}]</p>;
+  }
+};
 
   return (
     <div className="chat-container">
