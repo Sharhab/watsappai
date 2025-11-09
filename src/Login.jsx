@@ -14,41 +14,44 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMsg("");
-    setLoading(true);
+  e.preventDefault();
+  setMsg("");
+  setLoading(true);
 
-    try {
-      const res = await fetch("https://watsappai2.onrender.com/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, phone }),
-      });
+  try {
+    const res = await fetch("https://watsappai2.onrender.com/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (data.success) {
-        console.log("✅ Login successful:", data);
-        localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user || {}));
+    if (data.success) {
+      console.log("✅ Login successful:", data);
+
+      // ✅ Save login session
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("tenant", data.tenant); // IMPORTANT
       localStorage.setItem("email", data.email);
 
-        setToken(data.token);
-        setTenantId(data.tenant);
+      setToken(data.token);
+      setTenantId(data.tenant);
 
-        setMsg("✅ Login successful! Redirecting...");
-        setTimeout(() => navigate("/payment"), 1000);
-      } else {
-        console.error("❌ Login failed:", data.error);
-        setMsg(data.error || "Login failed. Please check your credentials.");
-      }
-    } catch (err) {
-      console.error("❌ Login error:", err);
-      setMsg("Something went wrong, please try again.");
-    } finally {
-      setLoading(false);
+      setMsg("✅ Login successful! Redirecting...");
+      setTimeout(() => navigate("/dashboard"), 800);
+
+    } else {
+      setMsg(data.error || "Invalid email or password.");
     }
-  };
+
+  } catch (err) {
+    setMsg("Network error. Check your internet.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="auth-container">
