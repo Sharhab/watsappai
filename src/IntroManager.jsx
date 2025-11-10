@@ -56,8 +56,7 @@ const handleSaveIntro = async (e) => {
   }
 
   const token = localStorage.getItem("token");
-  const tenantId = localStorage.getItem("tenantId");
-
+const tenantId = localStorage.getItem("tenant");
   if (!token || !tenantId) {
     alert("Missing authentication — please log in again.");
     return;

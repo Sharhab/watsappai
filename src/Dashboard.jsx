@@ -38,21 +38,31 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [selectedPhone]);
 
+useEffect(() => {
+  console.log("🔍 CHAT DATA RECEIVED:", chat);
+}, [chat]);
+
 const renderMessageContent = (msg) => {
-  if (!msg || !msg.content) return <p>[empty]</p>;
+  if (!msg) return null;
+
+  // ✅ If media type but content is missing, show placeholder
+  if ((msg.type === "audio" || msg.type === "video" || msg.type === "image") && !msg.content) {
+    return <p>[media missing]</p>;
+  }
 
   switch (msg.type) {
     case "text":
+      if (!msg.content || msg.content.trim() === "") return <p>[empty message]</p>;
       return <p>{msg.content}</p>;
 
     case "audio":
-      return <audio controls src={msg.content}></audio>;
+      return <audio controls src={msg.content} style={{ width: "200px" }} />;
 
     case "video":
-      return <video controls src={msg.content} width="250"></video>;
+      return <video controls width="250" src={msg.content} />;
 
     case "image":
-      return <img src={msg.content} alt="" width="200" />;
+      return <img src={msg.content} width="200" alt="sent" />;
 
     default:
       return <p>[unknown type: {msg.type}]</p>;
