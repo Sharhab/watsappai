@@ -138,7 +138,12 @@ export default function Dashboard() {
       case "text":
         return <p>{msg.content || "[empty]"}</p>;
       case "audio":
-        return <audio controls src={msg.content} style={{ width: "220px" }} />;
+         return (    
+    <div>
+      {msg.transcription && <p className="transcript-text">{msg.transcription}</p>}
+      <audio controls src={msg.mediaUrl || msg.content} style={{ width: "220px" }} />
+    </div>
+  );
       case "video":
         return <video controls width="250" src={msg.content} />;
       default:
