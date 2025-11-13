@@ -133,23 +133,82 @@ export default function Dashboard() {
     (c) => c.phone.includes(search) || (c.lastMessage || "").includes(search)
   );
 
-  const renderMessageContent = (msg) => {
-    switch (msg.type) {
-      case "text":
-        return <p>{msg.content || "[empty]"}</p>;
-      case "audio":
-         return (    
-    <div>
-      {msg.transcription && <p className="transcript-text">{msg.transcription}</p>}
-      <audio controls src={msg.mediaUrl || msg.content} style={{ width: "220px" }} />
-    </div>
+function ImageMessage({ src }) {
+  const [showFull, setShowFull] = useState(false);
+
+  return (
+    <>
+      <img
+        src={src}
+        alt="Uploaded"
+        onClick={() => setShowFull(true)}
+        style={{
+          maxWidth: "250px",
+          maxHeight: "250px",
+          borderRadius: "8px",
+          objectFit: "cover",
+          cursor: "pointer",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+        }}
+      />
+
+      {showFull && (
+        <div
+          onClick={() => setShowFull(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={src}
+            alt="Full View"
+            style={{
+              maxWidth: "90%",
+              maxHeight: "90%",
+              borderRadius: "10px",
+              objectFit: "contain",
+              boxShadow: "0 0 10px rgba(255,255,255,0.5)",
+            }}
+          />
+        </div>
+      )}
+    </>
   );
-      case "video":
-        return <video controls width="250" src={msg.content} />;
-      default:
-        return <p>[media]</p>;
-    }
-  };
+}
+
+function renderMessageContent(msg) {
+  switch (msg.type) {
+    case "text":
+      return <p>{msg.content || "[empty]"}</p>;
+
+    case "audio":
+      return (
+        <audio controls src={msg.content} style={{ width: "220px" }} />
+      );
+
+    case "video":
+      return (
+        <video controls width="250" src={msg.content} />
+      );
+
+    case "image":
+      return <ImageMessage src={msg.content} />;
+
+    default:
+      return <p>[unsupported media]</p>;
+  }
+}
+
 
   return (
     <div className="chat-container">
