@@ -185,29 +185,58 @@ function ImageMessage({ src }) {
     </>
   );
 }
+// inside Dashboard.jsx - replace renderMessageContent
+const renderMessageContent = (msg) => {
+  if (!msg) return <p>[empty]</p>;
+  const t = msg.type || "text";
 
-function renderMessageContent(msg) {
-  switch (msg.type) {
-    case "text":
-      return <p>{msg.content || "[empty]"}</p>;
-
-    case "audio":
-      return (
-        <audio controls src={msg.content} style={{ width: "220px" }} />
-      );
-
-    case "video":
-      return (
-        <video controls width="250" src={msg.content} />
-      );
-
-    case "image":
-      return <ImageMessage src={msg.content} />;
-
-    default:
-      return <p>[unsupported media]</p>;
+  if (t === "text") {
+    return <p style={{ whiteSpace: "pre-wrap" }}>{msg.content || "[empty]"}</p>;
   }
-}
+
+  if (t === "audio") {
+    // If content is a cloud URL (string), show audio player; else ignore
+    return (
+      <div>
+        <audio controls src={msg.content} style={{ width: "100%", maxWidth: 420 }} />
+        {/* show transcript if available in meta */}
+        {msg.meta?.transcriptConfidence !== undefined && (
+          <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
+            Transcript confidence: {Number(msg.meta.transcriptConfidence).toFixed(2)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (t === "video") {
+    return <video controls width="420" src={msg.content} />;
+  }
+
+  if (t === "image") {
+    // open image in new tab on click, show bigger preview in chat
+    return (
+      <div>
+        <a href={msg.content} target="_blank" rel="noreferrer">
+          <img
+            src={msg.content}
+            alt="uploaded"
+            style={{ maxWidth: "320px", width: "100%", borderRadius: 8, cursor: "pointer" }}
+          />
+        </a>
+        {/* If OCR or derived text exists */}
+        {msg.meta?.ocrText && (
+          <div style={{ marginTop: 6, fontSize: 13, color: "#333" }}>
+            <strong>OCR:</strong> <span style={{ whiteSpace: "pre-wrap" }}>{msg.meta.ocrText}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // fallback
+  return <p>[media]</p>;
+};
 
 
   return (
