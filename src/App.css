@@ -951,7 +951,7 @@ button:disabled {
 .back-btn {
   position: absolute;
   top: 10px;
-  left: 10px;
+  left: 20px;
   padding: 8px 12px;
   background: #fff;
   border-radius: 8px;
