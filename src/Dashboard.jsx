@@ -1,6 +1,7 @@
 // src/Dashboard.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { io } from "socket.io-client";
 import "./App.css";
 
 const BACKEND_BASE = "https://watsappai2.onrender.com";
@@ -18,6 +19,9 @@ export default function Dashboard() {
   // NEW: show only customer list first
   const [showListOnly, setShowListOnly] = useState(true);
 
+  // Typing indicator for current chat
+  const [typing, setTyping] = useState(false);
+
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [cancelled, setCancelled] = useState(false);
@@ -25,39 +29,194 @@ export default function Dashboard() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
+  // file input ref for sending media
+  const fileInputRef = useRef(null);
+
   const authHeaders = {
     Authorization: `Bearer ${token}`,
     "x-tenant-id": tenantId,
   };
 
-  // auto-refresh customer list
+  // socket ref
+  const socketRef = useRef(null);
+
+  // -------------------- Socket.IO connect --------------------
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io(BACKEND_BASE, {
+      extraHeaders: {
+        Authorization: `Bearer ${token}`,
+        "x-tenant-id": tenantId,
+      },
+      transports: ["websocket"],
+      autoConnect: true,
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      // subscribe tenant-wide room so sidebar receives tenant events
+      if (tenantId) socket.emit("subscribe", { tenantId });
+    });
+
+    socket.on("new_message", (payload) => {
+      // payload: { phone, message }
+      const phone = payload.phone;
+      appendMessageToUI(phone, payload.message);
+
+      // quickly update sidebar preview + unread
+      updateSidebarUnread(phone, payload.message);
+    });
+
+    socket.on("unread_update", (payload) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.phone === payload.phone ? { ...c, unread: payload.unread } : c))
+      );
+    });
+
+    socket.on("online_status", (payload) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.phone === payload.phone ? { ...c, online: payload.status === "online" } : c))
+      );
+    });
+
+    socket.on("typing", (payload) => {
+      // payload: { phone, typing }
+      if (selectedPhone === payload.phone) setTyping(!!payload.typing);
+    });
+
+    socket.on("disconnect", () => {
+      // socket disconnected
+    });
+
+    return () => {
+      try {
+        if (tenantId) socket.emit("unsubscribe", { tenantId });
+      } catch {}
+      socket.disconnect();
+      socketRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, tenantId, selectedPhone]);
+
+  // -------------------- fetch conversations list --------------------
   useEffect(() => {
     const fetchList = () => {
       fetch(`${BACKEND_BASE}/api/conversations`, { headers: authHeaders })
         .then((res) => res.json())
-        .then((data) => setConversations(data.conversations || []))
+        .then((data) => {
+          // ensure unread & online exist on each item
+          const convs = (data.conversations || []).map((c) => ({
+            unread: 0,
+            online: false,
+            ...c,
+          }));
+          setConversations(convs);
+        })
         .catch((err) => console.warn("fetch conversations err:", err));
     };
     fetchList();
     const interval = setInterval(fetchList, 5000);
     return () => clearInterval(interval);
-  }, []); // authHeaders stable per render from context
+    // authHeaders is stable across renders because token/tenantId come from context
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, tenantId]);
 
-  // load chat when selectedPhone changes
+  // -------------------- load chat when selectedPhone changes --------------------
   useEffect(() => {
     if (!selectedPhone) return;
     setLoading(true);
     fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}`, { headers: authHeaders })
       .then((res) => res.json())
-      .then((data) => setChat(data.conversationHistory || []))
+      .then((data) => {
+        setChat(data.conversationHistory || []);
+        // notify backend we're viewing (to mark read)
+        fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}/mark-read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+        }).catch(() => {});
+        // subscribe to phone room for live updates specific to this chat
+        if (socketRef.current) socketRef.current.emit("subscribe", { phone: selectedPhone });
+      })
       .catch((err) => {
         console.warn("load chat err:", err);
         setChat([]);
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhone]);
 
-  // send text reply
+  // -------------------- helpers: append message + update sidebar --------------------
+  function appendMessageToUI(phone, message) {
+    // If the message belongs to the currently-open chat — append it.
+    if (selectedPhone === phone) {
+      setChat((prev) => [...prev, message]);
+      return;
+    }
+
+    // Otherwise update the sidebar preview/unread (optimistic)
+    setConversations((prev) => {
+      const exists = prev.find((c) => c.phone === phone);
+      const preview =
+        message.type === "text"
+          ? (message.content || "").toString().slice(0, 80)
+          : message.type === "audio"
+          ? "🎤 Voice Message"
+          : message.type === "image"
+          ? "🖼 Image"
+          : message.type === "video"
+          ? "🎞 Video"
+          : "[media]";
+
+      if (exists) {
+        return prev.map((c) =>
+          c.phone === phone
+            ? { ...c, lastMessage: preview, lastTimestamp: message.timestamp || Date.now(), unread: (c.unread || 0) + 1 }
+            : c
+        );
+      } else {
+        // insert new conversation at top
+        return [
+          {
+            phone,
+            lastMessage: preview,
+            lastType: message.type || "text",
+            lastTimestamp: message.timestamp || Date.now(),
+            unread: 1,
+            online: true,
+          },
+          ...prev,
+        ];
+      }
+    });
+  }
+
+  function updateSidebarUnread(phone, message) {
+    // called when new_message event arrives — we already increment in appendMessageToUI,
+    // but this ensures other UI pieces get updated too.
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.phone === phone
+          ? {
+              ...c,
+              lastMessage:
+                message.type === "text"
+                  ? (message.content || "").toString().slice(0, 80)
+                  : message.type === "audio"
+                  ? "🎤 Voice Message"
+                  : message.type === "image"
+                  ? "🖼 Image"
+                  : "🎞 Video",
+              lastTimestamp: message.timestamp || Date.now(),
+              unread: (c.unread || 0) + (selectedPhone === phone ? 0 : 1),
+            }
+          : c
+      )
+    );
+  }
+
+  // -------------------- send text --------------------
   const sendReply = async () => {
     if (!messageInput.trim() || !selectedPhone) return;
 
@@ -72,14 +231,15 @@ export default function Dashboard() {
       });
       // append locally for instant UI
       setChat((prev) => [...prev, { sender: "ai", type: "text", content: msg, timestamp: new Date() }]);
+      // optionally emit typing=false
+      if (socketRef.current) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
     } catch (err) {
       console.error("sendReply error:", err);
-      // still append so operator sees the outgoing message (optional)
       setChat((prev) => [...prev, { sender: "ai", type: "text", content: msg, timestamp: new Date() }]);
     }
   };
 
-  // recording handlers
+  // -------------------- recording handlers (unchanged logic) --------------------
   const startRecording = async (e) => {
     setCancelled(false);
     recordStartX.current = e.touches ? e.touches[0].clientX : e.clientX;
@@ -92,6 +252,9 @@ export default function Dashboard() {
       mediaRecorderRef.current.ondataavailable = (ev) => audioChunksRef.current.push(ev.data);
       mediaRecorderRef.current.start();
       setIsRecording(true);
+
+      // tell remote typing state (operator is "typing"/recording)
+      if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: true });
     } catch (err) {
       console.warn("record start error:", err);
       alert("⚠️ Microphone permission required.");
@@ -100,7 +263,7 @@ export default function Dashboard() {
 
   const handleTouchMove = (e) => {
     if (!isRecording) return;
-    const currentX = e.touches ? e.touches[0].clientX : (e.clientX || 0);
+    const currentX = e.touches ? e.touches[0].clientX : e.clientX || 0;
     if (recordStartX.current - currentX > 80) {
       setCancelled(true);
       setIsRecording(false);
@@ -117,6 +280,7 @@ export default function Dashboard() {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
+      if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
     }
   };
 
@@ -128,7 +292,10 @@ export default function Dashboard() {
     mediaRecorderRef.current.stop();
 
     mediaRecorderRef.current.onstop = async () => {
-      if (cancelled) return;
+      if (cancelled) {
+        if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
+        return;
+      }
 
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
       const formData = new FormData();
@@ -148,15 +315,44 @@ export default function Dashboard() {
       // show outgoing audio locally (object URL) in AI side (sent by operator)
       const url = URL.createObjectURL(blob);
       setChat((prev) => [...prev, { sender: "ai", type: "audio", content: url, timestamp: new Date() }]);
+
+      if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
     };
   };
 
-  // search convs
+  // -------------------- send image/video --------------------
+  const handleMediaSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedPhone) return;
+
+    const form = new FormData();
+    form.append("phone", selectedPhone);
+    form.append("media", file);
+
+    // optimistic local show
+    const localUrl = URL.createObjectURL(file);
+    const fileType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file";
+    setChat((prev) => [...prev, { sender: "ai", type: fileType, content: localUrl, timestamp: new Date(), pending: true }]);
+
+    try {
+      await fetch(`${BACKEND_BASE}/api/messages/send-media`, {
+        method: "POST",
+        headers: authHeaders,
+        body: form,
+      });
+    } catch (err) {
+      console.warn("send-media error:", err);
+    } finally {
+      // the server will emit a new_message event with the real cloud URL — which will be appended
+    }
+  };
+
+  // -------------------- search + filtered list --------------------
   const filteredConversations = conversations.filter(
-    (c) => c.phone.includes(search) || (c.lastMessage || "").includes(search)
+    (c) => c.phone.includes(search) || (c.lastMessage || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // render message content
+  // -------------------- render message content --------------------
   const renderMessageContent = (msg) => {
     if (!msg) return <p>[empty]</p>;
     const t = msg.type || "text";
@@ -166,7 +362,6 @@ export default function Dashboard() {
     }
 
     if (t === "audio") {
-      // audio player should be clearly visible and full width inside bubble
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <audio controls src={msg.content} style={{ width: "100%", maxWidth: 420 }} />
@@ -205,13 +400,18 @@ export default function Dashboard() {
     return <p>[media]</p>;
   };
 
-  // open chat (customer clicked)
+  // -------------------- open chat / go back (subscribe/unsubscribe) --------------------
   const openChat = (phone) => {
     setSelectedPhone(phone);
     setShowListOnly(false);
+    // join phone room to receive events specific to this phone
+    if (socketRef.current) socketRef.current.emit("subscribe", { phone });
+    // mark unread as 0 locally
+    setConversations((prev) => prev.map((c) => (c.phone === phone ? { ...c, unread: 0 } : c)));
   };
 
   const goBack = () => {
+    if (socketRef.current && selectedPhone) socketRef.current.emit("unsubscribe", { phone: selectedPhone });
     setSelectedPhone(null);
     setShowListOnly(true);
     setChat([]);
@@ -225,6 +425,7 @@ export default function Dashboard() {
     return "ai"; // anything else treated as AI
   }
 
+  // -------------------- UI --------------------
   return (
     <div className="chat-container">
       {/* LEFT SIDEBAR */}
@@ -251,9 +452,25 @@ export default function Dashboard() {
               key={c.phone}
               className={`sidebar-item ${selectedPhone === c.phone ? "active" : ""}`}
               onClick={() => openChat(c.phone)}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
             >
-              <b>{c.phone}</b>
-              <p>{c.lastMessage || "No messages yet"}</p>
+              <div>
+                <b>{c.phone}</b>
+                <p style={{ margin: 0 }}>{c.lastMessage || "No messages yet"}</p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                {/* online dot */}
+                <div style={{ fontSize: 12 }}>
+                  {c.online ? <span style={{ color: "#2ecc71" }}>● online</span> : <span style={{ color: "#999" }}>offline</span>}
+                </div>
+                {/* unread badge */}
+                {c.unread > 0 && (
+                  <div style={{ background: "#e74c3c", color: "#fff", padding: "4px 8px", borderRadius: 12, fontSize: 12 }}>
+                    {c.unread}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -299,7 +516,11 @@ export default function Dashboard() {
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
+                  onChange={(e) => {
+                    setMessageInput(e.target.value);
+                    // emit typing
+                    if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: !!e.target.value });
+                  }}
                   placeholder="Type a message…"
                   style={{
                     flex: 1,
@@ -308,7 +529,25 @@ export default function Dashboard() {
                     border: "1px solid #ccc",
                   }}
                 />
-                <button onClick={sendReply} className="btn green">Send</button>
+                <button onClick={sendReply} className="btn green">
+                  Send
+                </button>
+
+                {/* file input (image/video) */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  style={{ display: "none" }}
+                  onChange={handleMediaSelect}
+                />
+                <button
+                  className="btn"
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  title="Send image / video"
+                >
+                  📎
+                </button>
 
                 {/* Hold to Record */}
                 <div
@@ -323,14 +562,14 @@ export default function Dashboard() {
                 >
                   {isRecording ? "🎙 Recording…" : "🎤 Hold to Record"}
                 </div>
-                <div
-  className="back-btn"
-  onClick={goBack}
->
-  ← Back
-</div>
-
               </div>
+
+              {/* Typing indicator */}
+              {typing && (
+                <div style={{ marginTop: 8, color: "#666", fontSize: 13 }}>
+                  Customer is typing...
+                </div>
+              )}
 
               {/* Recording indicator (waveform + cancel hint) */}
               {isRecording && (

@@ -1,0 +1,119 @@
+.dashboard {
+  display: flex;
+  height: 100vh;
+  background: #f2f2f2;
+}
+
+.sidebar {
+  width: 28%;
+  background: #fff;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.customer-item {
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  position: relative;
+}
+
+.customer-item.active {
+  background: #e8f3ff;
+}
+
+.customer-item .badge {
+  position: absolute;
+  right: 12px;
+  top: 18px;
+  background: #25d366;
+  color: white;
+  padding: 3px 7px;
+  border-radius: 50%;
+}
+
+.pin {
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.chat {
+  width: 72%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.them {
+  background: #fff;
+  align-self: flex-start;
+}
+
+.me {
+  background: #dcf8c6;
+  align-self: flex-end;
+}
+
+.status {
+  font-size: 11px;
+  text-align: right;
+  margin-top: 4px;
+  color: #555;
+}
+
+.typing {
+  display: flex;
+  gap: 5px;
+  padding: 10px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  background: #999;
+  border-radius: 50%;
+  animation: bounce 0.8s infinite alternate;
+}
+
+@keyframes bounce {
+  to {
+    opacity: 0.3;
+    transform: translateY(-4px);
+  }
+}
+
+.bubble-img {
+  width: 200px;
+  border-radius: 10px;
+}
+
+.bubble-video {
+  width: 220px;
+  border-radius: 10px;
+}
+
+.chat-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+}
+
+.upload-btn {
+  font-size: 22px;
+  cursor: pointer;
+}
