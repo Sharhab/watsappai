@@ -881,7 +881,7 @@ button:disabled {
   }
 
   .chat-sidebar {
-    width: 100%;
+    width: 90%;
     height: auto;
     border-right: none;
     border-bottom: 1px solid #ddd;
@@ -901,19 +901,19 @@ button:disabled {
 
   /* Sidebar on full width */
   .chat-sidebar {
-    width: 100%;
-    padding: 0.8rem;
+    width: 90%;
+    padding: 0.4rem;
   }
 
   /* Chat window full width */
   .chat-window {
-    width: 100%;
-    padding: 1rem;
+    width: 90%;
+    padding: 0.1rem;
   }
 
   /* Messages adjust */
   .message {
-    max-width: 85%;
+    max-width: 60%;
   }
 
   /* Input bar */
@@ -922,7 +922,7 @@ button:disabled {
   }
 
   .chat-window button {
-    padding: 8px 12px;
+    padding: 6px 9px;
   }
 
   /* Back button */
@@ -936,7 +936,7 @@ button:disabled {
 /* VERY SMALL SCREENS */
 @media (max-width: 480px) {
   .message {
-    max-width: 90%;
+    max-width: 80%;
     font-size: 0.9rem;
   }
 
