@@ -1,7 +1,6 @@
 // src/Dashboard.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
-import { io } from "socket.io-client";
 import "./App.css";
 
 const BACKEND_BASE = "https://watsappai2.onrender.com";
@@ -16,11 +15,8 @@ export default function Dashboard() {
   const [messageInput, setMessageInput] = useState("");
   const [search, setSearch] = useState("");
 
-  // show only customer list first
+  // NEW: show only customer list first
   const [showListOnly, setShowListOnly] = useState(true);
-
-  // Typing indicator for current chat
-  const [typing, setTyping] = useState(false);
 
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -29,275 +25,61 @@ export default function Dashboard() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // file input ref for sending media
-  const fileInputRef = useRef(null);
-
-  // keep track of subscribed phone to unsubscribe later
-  const currentPhoneRef = useRef(null);
-
   const authHeaders = {
-    Authorization: token ? `Bearer ${token}` : "",
-    "x-tenant-id": tenantId || "",
+    Authorization: `Bearer ${token}`,
+    "x-tenant-id": tenantId,
   };
 
-  // socket ref
-  const socketRef = useRef(null);
-
-  // -------------------- Socket.IO connect --------------------
+  // auto-refresh customer list
   useEffect(() => {
-    if (!token) return;
-
-    // use auth field (browser-friendly) to send token to server if needed
-    const socket = io(BACKEND_BASE, {
-      auth: { token },
-      transports: ["websocket"],
-      autoConnect: true,
-      path: "/socket.io",
-      // reconnection options are defaults; you can tune if needed
-    });
-
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-      // subscribe tenant-wide room so sidebar receives tenant events
-      if (tenantId) socket.emit("subscribe", { tenantId });
-      // if a phone is open, ensure subscribe
-      if (currentPhoneRef.current) socket.emit("subscribe", { phone: currentPhoneRef.current });
-    });
-
-    socket.on("connect_error", (err) => {
-      console.warn("Socket connect_error:", err && err.message ? err.message : err);
-    });
-
-    socket.on("new_message", (payload) => {
-      // payload: { phone, message }
-      const phone = payload.phone;
-      appendMessageToUI(phone, payload.message);
-      updateSidebarUnread(phone, payload.message);
-    });
-
-    socket.on("unread_update", (payload) => {
-      setConversations((prev) =>
-        prev.map((c) => (c.phone === payload.phone ? { ...c, unread: payload.unread } : c))
-      );
-    });
-
-    socket.on("online_status", (payload) => {
-      setConversations((prev) =>
-        prev.map((c) => (c.phone === payload.phone ? { ...c, online: payload.status === "online" } : c))
-      );
-    });
-
-    socket.on("typing", (payload) => {
-      // payload: { phone, typing }
-      if (selectedPhone === payload.phone) setTyping(!!payload.typing);
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-    });
-
-    return () => {
-      try {
-        if (tenantId && socket.connected) socket.emit("unsubscribe", { tenantId });
-      } catch {}
-      socket.disconnect();
-      socketRef.current = null;
+    const fetchList = () => {
+      fetch(`${BACKEND_BASE}/api/conversations`, { headers: authHeaders })
+        .then((res) => res.json())
+        .then((data) => setConversations(data.conversations || []))
+        .catch((err) => console.warn("fetch conversations err:", err));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, tenantId, selectedPhone]);
-
-  // -------------------- fetch conversations list --------------------
-  useEffect(() => {
-    if (!token) return;
-    let mounted = true;
-
-    const fetchList = async () => {
-      try {
-        const res = await fetch(`${BACKEND_BASE}/api/conversations`, { headers: authHeaders });
-        if (!res.ok) {
-          console.warn("fetch conversations non-OK:", res.status, await res.text().catch(() => ""));
-          return;
-        }
-        const data = await res.json();
-        if (!mounted) return;
-        const convs = (data.conversations || []).map((c) => ({
-          unread: c.unread || 0,
-          online: !!c.online,
-          ...c,
-        }));
-        setConversations(convs);
-      } catch (err) {
-        console.warn("fetch conversations err:", err?.message || err);
-      }
-    };
-
     fetchList();
     const interval = setInterval(fetchList, 5000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, tenantId]);
+    return () => clearInterval(interval);
+  }, []); // authHeaders stable per render from context
 
-  // -------------------- load chat when selectedPhone changes --------------------
+  // load chat when selectedPhone changes
   useEffect(() => {
     if (!selectedPhone) return;
-    let mounted = true;
     setLoading(true);
-
-    (async () => {
-      try {
-        const res = await fetch(`${BACKEND_BASE}/api/conversations/${encodeURIComponent(selectedPhone)}`, {
-          headers: authHeaders,
-        });
-        if (!res.ok) {
-          console.warn("load chat non-OK:", res.status, await res.text().catch(() => ""));
-          if (mounted) setChat([]);
-          return;
-        }
-        const data = await res.json();
-        if (!mounted) return;
-        setChat(data.conversationHistory || []);
-
-        // notify backend we're viewing (to mark read). endpoint might be optional; ignore errors
-        try {
-          await fetch(`${BACKEND_BASE}/api/conversations/${encodeURIComponent(selectedPhone)}/mark-read`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...authHeaders },
-          });
-        } catch (e) {
-          console.warn("mark-read error:", e?.message || e);
-        }
-
-        // subscribe to phone room for live updates specific to this chat
-        if (socketRef.current && socketRef.current.connected) {
-          // unsubscribe previous
-          if (currentPhoneRef.current && currentPhoneRef.current !== selectedPhone) {
-            socketRef.current.emit("unsubscribe", { phone: currentPhoneRef.current });
-          }
-          socketRef.current.emit("subscribe", { phone: selectedPhone });
-          currentPhoneRef.current = selectedPhone;
-        }
-      } catch (err) {
-        console.warn("load chat err:", err?.message || err);
-        if (mounted) setChat([]);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetch(`${BACKEND_BASE}/api/conversations/${selectedPhone}`, { headers: authHeaders })
+      .then((res) => res.json())
+      .then((data) => setChat(data.conversationHistory || []))
+      .catch((err) => {
+        console.warn("load chat err:", err);
+        setChat([]);
+      })
+      .finally(() => setLoading(false));
   }, [selectedPhone]);
 
-  // -------------------- helpers: append message + update sidebar --------------------
-  function appendMessageToUI(phone, message) {
-    // normalize message object shape
-    const normalized = {
-      sender: message.sender || "customer",
-      type: message.type || "text",
-      content: typeof message.content === "string" ? message.content : JSON.stringify(message.content || ""),
-      timestamp: message.timestamp || Date.now(),
-      meta: message.meta || {},
-    };
-
-    // If the message belongs to the currently-open chat — append it.
-    if (selectedPhone === phone) {
-      setChat((prev) => [...prev, normalized]);
-      return;
-    }
-
-    // Otherwise update the sidebar preview/unread (optimistic)
-    setConversations((prev) => {
-      const exists = prev.find((c) => c.phone === phone);
-      const preview =
-        normalized.type === "text"
-          ? (normalized.content || "").toString().slice(0, 80)
-          : normalized.type === "audio"
-          ? "🎤 Voice Message"
-          : normalized.type === "image"
-          ? "🖼 Image"
-          : normalized.type === "video"
-          ? "🎞 Video"
-          : "[media]";
-
-      if (exists) {
-        return prev.map((c) =>
-          c.phone === phone
-            ? { ...c, lastMessage: preview, lastTimestamp: normalized.timestamp, unread: (c.unread || 0) + 1, online: c.online ?? true }
-            : c
-        );
-      } else {
-        // insert new conversation at top
-        return [
-          {
-            phone,
-            lastMessage: preview,
-            lastType: normalized.type,
-            lastTimestamp: normalized.timestamp,
-            unread: 1,
-            online: true,
-          },
-          ...prev,
-        ];
-      }
-    });
-  }
-
-  function updateSidebarUnread(phone, message) {
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.phone === phone
-          ? {
-              ...c,
-              lastMessage:
-                message.type === "text"
-                  ? (message.content || "").toString().slice(0, 80)
-                  : message.type === "audio"
-                  ? "🎤 Voice Message"
-                  : message.type === "image"
-                  ? "🖼 Image"
-                  : "🎞 Video",
-              lastTimestamp: message.timestamp || Date.now(),
-              unread: (c.unread || 0) + (selectedPhone === phone ? 0 : 1),
-            }
-          : c
-      )
-    );
-  }
-
-  // -------------------- send text --------------------
+  // send text reply
   const sendReply = async () => {
     if (!messageInput.trim() || !selectedPhone) return;
 
     const msg = messageInput;
     setMessageInput("");
 
-    // optimistic append
-    setChat((prev) => [...prev, { sender: "ai", type: "text", content: msg, timestamp: new Date() }]);
-
     try {
-      const res = await fetch(`${BACKEND_BASE}/api/messages/send`, {
+      await fetch(`${BACKEND_BASE}/api/messages/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ phone: selectedPhone, message: msg }),
       });
-      if (!res.ok) {
-        console.warn("send message failed:", res.status, await res.text().catch(() => ""));
-      }
+      // append locally for instant UI
+      setChat((prev) => [...prev, { sender: "ai", type: "text", content: msg, timestamp: new Date() }]);
     } catch (err) {
-      console.error("sendReply error:", err?.message || err);
-    } finally {
-      if (socketRef.current) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
+      console.error("sendReply error:", err);
+      // still append so operator sees the outgoing message (optional)
+      setChat((prev) => [...prev, { sender: "ai", type: "text", content: msg, timestamp: new Date() }]);
     }
   };
 
-  // -------------------- recording handlers --------------------
+  // recording handlers
   const startRecording = async (e) => {
     setCancelled(false);
     recordStartX.current = e.touches ? e.touches[0].clientX : e.clientX;
@@ -310,17 +92,15 @@ export default function Dashboard() {
       mediaRecorderRef.current.ondataavailable = (ev) => audioChunksRef.current.push(ev.data);
       mediaRecorderRef.current.start();
       setIsRecording(true);
-
-      if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: true });
     } catch (err) {
-      console.warn("record start error:", err?.message || err);
+      console.warn("record start error:", err);
       alert("⚠️ Microphone permission required.");
     }
   };
 
   const handleTouchMove = (e) => {
     if (!isRecording) return;
-    const currentX = e.touches ? e.touches[0].clientX : e.clientX || 0;
+    const currentX = e.touches ? e.touches[0].clientX : (e.clientX || 0);
     if (recordStartX.current - currentX > 80) {
       setCancelled(true);
       setIsRecording(false);
@@ -337,7 +117,6 @@ export default function Dashboard() {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
-      if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
     }
   };
 
@@ -349,75 +128,35 @@ export default function Dashboard() {
     mediaRecorderRef.current.stop();
 
     mediaRecorderRef.current.onstop = async () => {
-      if (cancelled) {
-        if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
-        return;
-      }
+      if (cancelled) return;
 
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
       const formData = new FormData();
       formData.append("phone", selectedPhone);
       formData.append("audio", blob, "voice-message.webm");
 
-      // optimistic local show
-      const url = URL.createObjectURL(blob);
-      setChat((prev) => [...prev, { sender: "ai", type: "audio", content: url, timestamp: new Date() }]);
-
       try {
-        const res = await fetch(`${BACKEND_BASE}/api/messages/send-voice`, {
+        await fetch(`${BACKEND_BASE}/api/messages/send-voice`, {
           method: "POST",
-          headers: authHeaders, // don't set Content-Type for FormData
+          headers: authHeaders,
           body: formData,
         });
-        if (!res.ok) {
-          console.warn("send-voice failed:", res.status, await res.text().catch(() => ""));
-        }
       } catch (err) {
-        console.warn("send-voice error:", err?.message || err);
-      } finally {
-        if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: false });
+        console.warn("send-voice error:", err);
       }
+
+      // show outgoing audio locally (object URL) in AI side (sent by operator)
+      const url = URL.createObjectURL(blob);
+      setChat((prev) => [...prev, { sender: "ai", type: "audio", content: url, timestamp: new Date() }]);
     };
   };
 
-  // -------------------- send image/video --------------------
-  const handleMediaSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedPhone) return;
-
-    const form = new FormData();
-    form.append("phone", selectedPhone);
-    form.append("media", file);
-
-    // optimistic local show
-    const localUrl = URL.createObjectURL(file);
-    const fileType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file";
-    setChat((prev) => [...prev, { sender: "ai", type: fileType, content: localUrl, timestamp: new Date(), pending: true }]);
-
-    try {
-      const res = await fetch(`${BACKEND_BASE}/api/messages/send-media`, {
-        method: "POST",
-        headers: authHeaders, // don't set Content-Type for FormData
-        body: form,
-      });
-      if (!res.ok) {
-        console.warn("send-media failed:", res.status, await res.text().catch(() => ""));
-      }
-    } catch (err) {
-      console.warn("send-media error:", err?.message || err);
-    } finally {
-      // the server will emit a new_message event with the real cloud URL — which will be appended
-      // clear input value so same file can be selected again
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  // -------------------- search + filtered list --------------------
+  // search convs
   const filteredConversations = conversations.filter(
-    (c) => c.phone.includes(search) || (c.lastMessage || "").toLowerCase().includes(search.toLowerCase())
+    (c) => c.phone.includes(search) || (c.lastMessage || "").includes(search)
   );
 
-  // -------------------- render message content --------------------
+  // render message content
   const renderMessageContent = (msg) => {
     if (!msg) return <p>[empty]</p>;
     const t = msg.type || "text";
@@ -427,6 +166,7 @@ export default function Dashboard() {
     }
 
     if (t === "audio") {
+      // audio player should be clearly visible and full width inside bubble
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <audio controls src={msg.content} style={{ width: "100%", maxWidth: 420 }} />
@@ -447,7 +187,11 @@ export default function Dashboard() {
       return (
         <div>
           <a href={msg.content} target="_blank" rel="noreferrer">
-            <img src={msg.content} alt="uploaded" style={{ maxWidth: "320px", width: "100%", borderRadius: 8, cursor: "pointer" }} />
+            <img
+              src={msg.content}
+              alt="uploaded"
+              style={{ maxWidth: "320px", width: "100%", borderRadius: 8, cursor: "pointer" }}
+            />
           </a>
           {msg.meta?.ocrText && (
             <div style={{ marginTop: 6, fontSize: 13, color: "#333" }}>
@@ -461,26 +205,13 @@ export default function Dashboard() {
     return <p>[media]</p>;
   };
 
-  // -------------------- open chat / go back (subscribe/unsubscribe) --------------------
+  // open chat (customer clicked)
   const openChat = (phone) => {
     setSelectedPhone(phone);
     setShowListOnly(false);
-    // join phone room to receive events specific to this phone
-    if (socketRef.current && socketRef.current.connected) {
-      // unsubscribe previous
-      if (currentPhoneRef.current && currentPhoneRef.current !== phone) {
-        socketRef.current.emit("unsubscribe", { phone: currentPhoneRef.current });
-      }
-      socketRef.current.emit("subscribe", { phone });
-      currentPhoneRef.current = phone;
-    }
-    // mark unread as 0 locally
-    setConversations((prev) => prev.map((c) => (c.phone === phone ? { ...c, unread: 0 } : c)));
   };
 
   const goBack = () => {
-    if (socketRef.current && selectedPhone) socketRef.current.emit("unsubscribe", { phone: selectedPhone });
-    currentPhoneRef.current = null;
     setSelectedPhone(null);
     setShowListOnly(true);
     setChat([]);
@@ -488,12 +219,12 @@ export default function Dashboard() {
 
   // helper: map session sender to CSS class user vs ai
   function senderClass(sender) {
+    // server uses "customer" for customer messages, "ai" for assistant replies.
     if (!sender) return "ai";
     if (sender === "customer" || sender === "user") return "user"; // customer's bubble (right/green)
     return "ai"; // anything else treated as AI
   }
 
-  // -------------------- UI --------------------
   return (
     <div className="chat-container">
       {/* LEFT SIDEBAR */}
@@ -520,25 +251,9 @@ export default function Dashboard() {
               key={c.phone}
               className={`sidebar-item ${selectedPhone === c.phone ? "active" : ""}`}
               onClick={() => openChat(c.phone)}
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
             >
-              <div>
-                <b>{c.phone}</b>
-                <p style={{ margin: 0 }}>{c.lastMessage || "No messages yet"}</p>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                {/* online dot */}
-                <div style={{ fontSize: 12 }}>
-                  {c.online ? <span style={{ color: "#2ecc71" }}>● online</span> : <span style={{ color: "#999" }}>offline</span>}
-                </div>
-                {/* unread badge */}
-                {c.unread > 0 && (
-                  <div style={{ background: "#e74c3c", color: "#fff", padding: "4px 8px", borderRadius: 12, fontSize: 12 }}>
-                    {c.unread}
-                  </div>
-                )}
-              </div>
+              <b>{c.phone}</b>
+              <p>{c.lastMessage || "No messages yet"}</p>
             </div>
           ))}
         </div>
@@ -584,11 +299,7 @@ export default function Dashboard() {
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
                   value={messageInput}
-                  onChange={(e) => {
-                    setMessageInput(e.target.value);
-                    // emit typing
-                    if (socketRef.current && selectedPhone) socketRef.current.emit("typing", { phone: selectedPhone, typing: !!e.target.value });
-                  }}
+                  onChange={(e) => setMessageInput(e.target.value)}
                   placeholder="Type a message…"
                   style={{
                     flex: 1,
@@ -597,15 +308,7 @@ export default function Dashboard() {
                     border: "1px solid #ccc",
                   }}
                 />
-                <button onClick={sendReply} className="btn green">
-                  Send
-                </button>
-
-                {/* file input (image/video) */}
-                <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={handleMediaSelect} />
-                <button className="btn" onClick={() => fileInputRef.current && fileInputRef.current.click()} title="Send image / video">
-                  📎
-                </button>
+                <button onClick={sendReply} className="btn green">Send</button>
 
                 {/* Hold to Record */}
                 <div
@@ -620,14 +323,9 @@ export default function Dashboard() {
                 >
                   {isRecording ? "🎙 Recording…" : "🎤 Hold to Record"}
                 </div>
-              </div>
 
-              {/* Typing indicator */}
-              {typing && (
-                <div style={{ marginTop: 8, color: "#666", fontSize: 13 }}>
-                  Customer is typing...
-                </div>
-              )}
+
+              </div>
 
               {/* Recording indicator (waveform + cancel hint) */}
               {isRecording && (
